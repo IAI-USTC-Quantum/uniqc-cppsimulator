@@ -60,7 +60,7 @@ pytest tests/
 cmake -S . -B build-cpp -DCMAKE_BUILD_TYPE=Release \
   -Dpybind11_DIR="$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')"
 cmake --build build-cpp --config Release
-./build-cpp/bin/UnifiedQuantumTest   # Windows: .\build-cpp\bin\Release\UnifiedQuantumTest.exe
+./build-cpp/bin/Release/UnifiedQuantumTest   # Windows: .\build-cpp\bin\Release\UnifiedQuantumTest.exe
 ```
 
 ## 版本与兼容

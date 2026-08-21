@@ -87,7 +87,9 @@ jobs:
 
     - name: Run the native C++ test (Linux / macOS)
       if: runner.os != 'Windows'
-      run: ./build-cpp/bin/UnifiedQuantumTest
+      # CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE puts the binary under
+      # bin/Release even for single-config generators.
+      run: ./build-cpp/bin/Release/UnifiedQuantumTest
 
     - name: Run the native C++ test (Windows)
       if: runner.os == 'Windows'
