@@ -21,7 +21,7 @@ UnifiedQuantum 的 C++ 量子线路模拟内核，独立发版。
 pip install uniqc-cppsimulator
 ```
 
-提供 Linux / Windows 的 cp310–cp314 预编译 wheel。macOS 及其他平台自动从 sdist 源码编译，需要满足下方"源码构建要求"。
+提供 Linux / Windows / macOS 的 cp310–cp314 预编译 wheel；其余平台自动从 sdist 源码编译，需要满足下方"源码构建要求"。
 
 ## 快速上手
 
