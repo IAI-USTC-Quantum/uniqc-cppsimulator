@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm", "wheel", "cmake", "ninja", "pybind11"]
+build-backend = "setuptools.build_meta"
+# setup.py is retained for custom CMakeExtension / CMakeBuild logic
+
+[project]
+name = "uniqc-cppsimulator"
+dynamic = ["version"]
+description = "C++ quantum circuit simulators (statevector / density operator) with pybind11 bindings. The native simulation kernel of UnifiedQuantum."
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10,<3.15"
+authors = [
+    { name = "Agony", email = "chenzhaoyun@iai.ustc.edu.cn" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: C++",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+]
+# The extension has no runtime dependencies: bindings use only
+# pybind11/stl/complex/functional (build-time), not numpy.
+dependencies = []
+
+[project.urls]
+"Source Code" = "https://github.com/IAI-USTC-Quantum/uniqc-cppsimulator.git"
+"UnifiedQuantum" = "https://github.com/IAI-USTC-Quantum/UnifiedQuantum.git"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
+skip = "*-musllinux_* *-win32"
+test-command = "python -c \"import uniqc_cpp\""
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+local_scheme = "no-local-version"

@@ -1,0 +1,94 @@
+name: Build-and-test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release]
+        c_compiler: [gcc, clang, cl]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: ubuntu-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          - os: windows-latest
+            c_compiler: gcc
+          - os: windows-latest
+            c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: cl
+          - os: macos-latest
+            c_compiler: gcc
+          - os: macos-latest
+            c_compiler: cl
+
+    steps:
+    - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install build dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake ninja-build
+
+    - name: Install build dependencies (Windows / macOS)
+      if: runner.os != 'Linux'
+      run: |
+        uv pip install --system cmake ninja setuptools setuptools_scm wheel pybind11
+
+    - name: Build and install the extension
+      run: |
+        uv pip install --system setuptools setuptools_scm wheel pybind11
+        uv pip uninstall uniqc-cppsimulator --system -y || true
+        uv pip install --system . --no-build-isolation
+
+    - name: Run Python binding tests
+      run: |
+        uv pip install --system pytest
+        pytest tests/ -v --tb=short
+
+    - name: Build the native C++ test
+      shell: bash
+      run: |
+        cmake -S . -B build-cpp -DCMAKE_BUILD_TYPE=Release \
+          -Dpybind11_DIR="$(python -c 'import pybind11; print(pybind11.get_cmake_dir())')"
+        cmake --build build-cpp --config Release
+
+    - name: Run the native C++ test (Linux / macOS)
+      if: runner.os != 'Windows'
+      run: ./build-cpp/bin/UnifiedQuantumTest
+
+    - name: Run the native C++ test (Windows)
+      if: runner.os == 'Windows'
+      run: .\build-cpp\bin\Release\UnifiedQuantumTest.exe

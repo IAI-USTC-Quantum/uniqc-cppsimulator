@@ -17,7 +17,7 @@ def main() -> int:
         return 1
 
     return subprocess.run(
-        ["pybind11-stubgen", "uniqc_cpp", "-o", str(PROJECT_ROOT / "uniqc" / "simulator")],
+        ["pybind11-stubgen", "uniqc_cpp", "-o", str(PROJECT_ROOT)],
         cwd=PROJECT_ROOT,
         check=False,
     ).returncode

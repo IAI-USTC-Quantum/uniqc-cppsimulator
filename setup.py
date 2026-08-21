@@ -10,7 +10,7 @@ import re
 import subprocess
 import sys
 
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -123,9 +123,18 @@ class CMakeBuild(build_ext):
             ["cmake", "--build", "."] + build_args, cwd=self.build_temp
         )
 
+        # Ship the type stub next to the built extension so type checkers
+        # pick it up after installation (uniqc_cpp is a top-level module,
+        # so package_data cannot carry the stub).
+        stub = os.path.join(ext.sourcedir, "uniqc_cpp.pyi")
+        if os.path.exists(stub):
+            self.copy_file(stub, os.path.join(extdir, "uniqc_cpp.pyi"))
+
 
 setup(
-    packages=find_packages(exclude=["uniqc.test*"]),
+    # No pure-Python modules: the distribution ships only the compiled
+    # uniqc_cpp extension and its type stub.
+    packages=[],
     ext_modules=[CMakeExtension("uniqc_cpp")],
     cmdclass={"build_ext": CMakeBuild},
 )
