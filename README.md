@@ -11,7 +11,7 @@ UnifiedQuantum 的 C++ 量子线路模拟内核，独立发版。
 - `StatevectorSimulator` — 态矢量模拟器（最多 30 量子比特）
 - `DensityOperatorSimulator` — 密度算符模拟器（最多 10 量子比特，支持噪声通道）
 
-它原来是 [UnifiedQuantum](https://github.com/IAI-USTC-Quantum/UnifiedQuantum) 仓库的 `UniqcCpp/` 目录，自 v1.0.0 起拆分为独立仓库、独立版本、独立发布。UnifiedQuantum 通过 PyPI 依赖本包，二者接口保持兼容。
+它原来是 [UnifiedQuantum](https://github.com/IAI-USTC-Quantum/UnifiedQuantum) 仓库的 `UniqcCpp/` 目录，自 v0.0.18 起拆分为独立仓库、独立版本、独立发布。UnifiedQuantum 通过 PyPI 依赖本包，二者接口保持兼容。
 
 **安装本包后，import 名为 `uniqc_cpp`**（分发名 `uniqc-cppsimulator`，import 名 `uniqc_cpp`）。
 
