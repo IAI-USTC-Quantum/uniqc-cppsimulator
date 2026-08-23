@@ -139,3 +139,46 @@ def test_qram_valid_call_succeeds_on_both_backends() -> None:
 
     dm = make_sim("DensityOperatorSimulator", 6)
     dm.qram([0, 1], [2, 3], [0] * 4, [4, 5])
+
+
+# ---------------------------------------------------------------------------
+# Noise-channel regressions
+# ---------------------------------------------------------------------------
+
+
+def _twoqubit_depolarizing_error_rate(p: float, shots: int = 2000) -> float:
+    """Measured error rate of X(0); ISWAP(0,1); twoqubit_depolarizing(p).
+
+    The ideal outcome is |01> (integer 2). Of the 15 two-qubit Pauli errors,
+    the phase-only ones (ZI, IZ, ZZ) preserve the computational-basis
+    outcome, so the expected error rate is (1 - 3/15) * p = 0.8 * p.
+    """
+    errors = 0
+    for _ in range(shots):
+        sim = make_sim("StatevectorSimulator", 2)
+        sim.x(0)
+        sim.iswap(0, 1)
+        sim.twoqubit_depolarizing(0, 1, p)
+        if sim.measure_single_shot([0, 1]) != 2:
+            errors += 1
+    return errors / shots
+
+
+def test_twoqubit_depolarizing_probability_applies_per_call() -> None:
+    """Regression: each call must honour its own ``p``.
+
+    In 1.0.0 the Kraus probability vector inside
+    ``StatevectorSimulator::twoqubit_depolarizing`` was a ``const static``
+    local, initialised once per process: the first call's ``p`` silently
+    applied to every later call. Interleave low/high ``p`` in both orders
+    within one process and check each batch matches its own expectation
+    (0.8 * p for this probe).
+    """
+    for first, second in ((0.1, 0.9), (0.9, 0.1)):
+        uniqc_cpp.seed(20260823)
+        low_or_high_first = _twoqubit_depolarizing_error_rate(first)
+        uniqc_cpp.seed(20260823)
+        low_or_high_second = _twoqubit_depolarizing_error_rate(second)
+        rates = {first: low_or_high_first, second: low_or_high_second}
+        assert rates[0.1] == pytest.approx(0.08, abs=0.02)
+        assert rates[0.9] == pytest.approx(0.72, abs=0.04)

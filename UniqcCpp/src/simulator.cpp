@@ -1,4 +1,4 @@
-﻿#include "simulator.h"
+#include "simulator.h"
 namespace uniqc {
 
     using namespace statevector_simulator_impl;
@@ -746,7 +746,7 @@ namespace uniqc {
         CHECK_QUBIT_RANGE2(qn2, qn2)
         CHECK_PROBABILITY_BOUND(p)
 
-        const static std::vector<double> p_(15, p / 15);
+        const std::vector<double> p_(15, p / 15);
         pauli_error_2q(qn1, qn2, p_);
     }
 

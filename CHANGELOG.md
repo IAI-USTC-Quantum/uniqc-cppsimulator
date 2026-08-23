@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-23
+
+### Fixed
+
+- **`StatevectorSimulator::twoqubit_depolarizing` 去极化概率被进程内首次调用固化**：1.0.0 中 Kraus 概率向量被误声明为 `const static` 局部变量，只在首次调用时初始化，之后同进程内所有调用静默沿用第一次的 `p`（实测错误率被"钉死"，且密度算符实现无此问题，两后端行为不一致）。现改为每次调用按当前 `p` 构建。新增同进程交变 `p` 的回归测试（`tests/test_bindings.py`）。
+
+### Removed
+
+- 清理 `qopcode.cpp` 中整段注释掉的废弃代码（`string_to_UnitaryType` / `string_to_NoiseType` / `gate_qubit_count`）。
+
 ## [1.0.0] - 2026-08-21
 
 初始独立版本。C++ 模拟器自 [UnifiedQuantum](https://github.com/IAI-USTC-Quantum/UnifiedQuantum) v0.0.17 拆分为独立仓库，import 名保持 `uniqc_cpp` 不变，API 与拆分前完全兼容。
