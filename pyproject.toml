@@ -42,6 +42,12 @@ dependencies = []
 [tool.setuptools]
 zip-safe = false
 
+[tool.pytest.ini_options]
+# tests/ imports the repo-root `benchmark` package; with a bare `pytest`
+# invocation (as in CI) the working directory is not on sys.path.
+pythonpath = ["."]
+testpaths = ["tests"]
+
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
 skip = "*-musllinux_* *-win32"
