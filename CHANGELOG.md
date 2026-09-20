@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`StatevectorSimulator::measure_single_shot` 标量重载死循环**：`measure_single_shot({ qubit })` 的花括号初始化列表在重载决议中选中了标量重载自身，完美尾递归被编译器优化为无限循环——表现为挂起而非崩溃，1.0.1 及此前所有发布版本均受影响（list 重载不受影响，故既有测试未暴露）。现改为显式 `std::vector{ qubit }` 转发（与 `pmeasure` 标量重载同一写法）。新增带子进程超时保护的回归测试（`tests/test_bindings.py`）：旧版本上该测试失败而非挂死套件。
+
+
 ## [1.0.1] - 2026-08-23
 
 ### Fixed

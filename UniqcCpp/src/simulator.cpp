@@ -871,7 +871,7 @@ namespace uniqc {
 
     size_t StatevectorSimulator::measure_single_shot(size_t qubit)
     {
-        return measure_single_shot({ qubit });
+        return measure_single_shot(std::vector{ qubit });
     }
 
     size_t StatevectorSimulator::measure_single_shot(const std::vector<size_t>& qubit)

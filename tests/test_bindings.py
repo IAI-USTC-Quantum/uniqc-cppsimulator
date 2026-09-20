@@ -13,6 +13,9 @@ on the ``uniqc`` Python package. It includes:
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
 import pytest
 
 import uniqc_cpp
@@ -162,6 +165,34 @@ def _twoqubit_depolarizing_error_rate(p: float, shots: int = 2000) -> float:
         if sim.measure_single_shot([0, 1]) != 2:
             errors += 1
     return errors / shots
+
+
+def test_measure_single_shot_scalar_overload_returns() -> None:
+    """Regression: the scalar overload forwards to the list overload.
+
+    Up to 1.0.1 it forwarded through a braced init-list that overload
+    resolution matched back to the scalar overload itself — a perfect tail
+    recursion the compiler turns into an infinite loop (the process hangs,
+    it does not crash).  Run in a subprocess with a timeout so a regression
+    fails the test instead of hanging the suite.
+    """
+    code = (
+        "import uniqc_cpp\n"
+        "def fresh():\n"
+        "    s = uniqc_cpp.StatevectorSimulator()\n"
+        "    s.init_n_qubit(2)\n"
+        "    s.hadamard(0)\n"
+        "    return s\n"
+        "assert fresh().measure_single_shot(0) in (0, 1)\n"
+        "# deterministic: scalar and list overloads must sample identically\n"
+        "uniqc_cpp.seed(7); a = fresh().measure_single_shot([0])\n"
+        "uniqc_cpp.seed(7); b = fresh().measure_single_shot(0)\n"
+        "assert a == b\n"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, timeout=60, check=False
+    )
+    assert proc.returncode == 0, proc.stderr
 
 
 def test_twoqubit_depolarizing_probability_applies_per_call() -> None:
