@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`StatevectorSimulator::measure_single_shot` 标量重载死循环**：`measure_single_shot({ qubit })` 的花括号初始化列表在重载决议中选中了标量重载自身，完美尾递归被编译器优化为无限循环——表现为挂起而非崩溃，1.0.1 及此前所有发布版本均受影响（list 重载不受影响，故既有测试未暴露）。现改为显式 `std::vector{ qubit }` 转发（与 `pmeasure` 标量重载同一写法）。新增带子进程超时保护的回归测试（`tests/test_bindings.py`）：旧版本上该测试失败而非挂死套件。
 
+### Added
+
+- **跨模拟器 CPU benchmark 套件（`benchmark/`）**：以 `uniqc_cpp` 为对象与主流 pip 可装 CPU 模拟器（Qiskit Aer、Cirq、qsim、Qulacs、PennyLane lightning、Qibo、quimb、QuTiP、Braket 本地模拟器等）对比；统一线路 IR + 注册表扩展点（线路族 / 噪声预设 / 后端适配器 / 矩阵预设 / 图表）；单线程 vs 多线程基线（外部模拟器走原生线程旋钮，`uniqc_cpp` 走进程池并行采样吞吐）；结果 JSON 落盘 + 图表 + 报告生成（`python -m benchmark run|plot|report`）。摘要见 README"性能基准"，详情见 `doc/benchmark.md`。
 
 ## [1.0.1] - 2026-08-23
 

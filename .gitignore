@@ -195,6 +195,11 @@ bad_circuits.txt
 # setuptools_scm generated version file
 uniqc/_version.py
 
+# Benchmark scratch env & runs (published snapshots live in doc/benchmark/)
+.venv-bench/
+benchmark/results*.json
+!doc/benchmark/*.png
+
 # CMake build artifacts
 UniqcCpp/CMakeCache.txt
 UniqcCpp/CMakeFiles/
