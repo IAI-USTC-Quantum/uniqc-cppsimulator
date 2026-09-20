@@ -63,6 +63,17 @@ cmake --build build-cpp --config Release
 ./build-cpp/bin/Release/UnifiedQuantumTest   # Windows: .\build-cpp\bin\Release\UnifiedQuantumTest.exe
 ```
 
+## 文档
+
+Sphinx 文档（安装/构建、基准套件使用、`benchmark` 包 API 参考、`uniqc_cpp` 扩展 API 参考）位于 [`docs/`](docs/)：
+
+```bash
+uv pip install --python .venv-bench/bin/python sphinx
+.venv-bench/bin/python -m sphinx -b html docs docs/_build/html   # 或 cd docs && make html PYTHON=../.venv-bench/bin/python
+```
+
+类型存根 `uniqc_cpp.pyi` 随 wheel 发布；基准结果文档见 [doc/benchmark.md](doc/benchmark.md)。
+
 ## 性能基准
 
 [`benchmark/`](benchmark/README.md) 提供跨模拟器 CPU 基准套件：以 `uniqc_cpp` 为对象，

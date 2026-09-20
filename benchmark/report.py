@@ -16,6 +16,7 @@ def _label(backend: str) -> str:
 
 
 def _fmt_ms(ms: float) -> str:
+    """Human-friendly milliseconds ("2.13 s", "13 ms", "0.42 ms")."""
     if ms >= 1000:
         return f"{ms / 1000:.2f} s"
     if ms >= 10:
@@ -24,6 +25,7 @@ def _fmt_ms(ms: float) -> str:
 
 
 def _ok(results: list[dict]) -> list[dict]:
+    """Only successfully measured records."""
     return [r for r in results if r.get("status") == "ok"]
 
 
@@ -63,6 +65,8 @@ def _pivot_table(rows: list[dict], title: str) -> str:
 
 
 def _is_best(rows, circuit, depth, q, threads) -> str | None:
+    """Backend name with the lowest median for this (circuit, qubits,
+    threads) point, or None when there is nothing to compare."""
     candidates = [r for r in rows if r["circuit"] == circuit and r["depth"] == depth
                   and r["n_qubits"] == q and r["threads"] == threads]
     if not candidates:
@@ -71,6 +75,7 @@ def _is_best(rows, circuit, depth, q, threads) -> str | None:
 
 
 def _meta_table(meta: dict) -> str:
+    """Markdown tables for the run environment and per-backend versions."""
     backends = meta.get("backends", {})
     lines = [
         "| field | value |",

@@ -13,6 +13,7 @@ from benchmark.registry import register_backend
 
 
 def _noise_instruction(op):
+    """Translate an inline channel op into a qiskit-aer QuantumError."""
     from qiskit_aer.noise import amplitude_damping_error, depolarizing_error, pauli_error
 
     if op.name == "depol1":
@@ -27,6 +28,9 @@ def _noise_instruction(op):
 
 
 def build_qiskit_circuit(circuit: Circuit, n_clbits: int = 0):
+    """Compile IR to a ``QuantumCircuit``; channels become QuantumError
+    instructions in place, and ``n_clbits`` reserves a classical register
+    for the counts readout in shots mode."""
     from qiskit import QuantumCircuit
 
     qc = QuantumCircuit(circuit.n_qubits, n_clbits)
@@ -62,7 +66,8 @@ def build_qiskit_circuit(circuit: Circuit, n_clbits: int = 0):
 
 
 def _counts_p_q0_1(counts: dict, shots: int) -> float:
-    # Qiskit count keys are big-endian printed strings: qubit 0 is the last char.
+    """Empirical P(q0=1) from Aer/qiskit count strings (big-endian printed,
+    so qubit 0 is the last character)."""
     ones = sum(n for bits, n in counts.items() if bits.replace(" ", "")[-1] == "1")
     return ones / shots
 

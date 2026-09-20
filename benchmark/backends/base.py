@@ -43,12 +43,14 @@ class BenchmarkBackend(ABC):
     homepage: ClassVar[str] = ""
 
     def __init__(self, threads: int = 1) -> None:
+        """Store the thread tier; ``option``-mode backends apply it now."""
         self.threads = threads
         if threads > 1:
             self.set_threads(threads)
 
     @classmethod
     def availability(cls) -> tuple[bool, str]:
+        """``(available, reason)`` — checks that ``import_name`` is importable."""
         if cls.import_name is None:
             return True, ""
         if importlib.util.find_spec(cls.import_name) is None:

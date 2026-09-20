@@ -26,6 +26,8 @@ THREAD_ENV_VARS = (
 
 
 def _worker_env(threads: int) -> dict:
+    """Environment for a worker subprocess: BLAS/OpenMP thread counts pinned
+    to ``threads`` *before* any simulator import, plus quiet defaults."""
     env = dict(os.environ)
     for var in THREAD_ENV_VARS:
         env[var] = str(threads)
@@ -35,6 +37,11 @@ def _worker_env(threads: int) -> dict:
 
 
 def _call_worker(args: list[str], env: dict, timeout: int) -> dict:
+    """Run ``python -m benchmark.worker <args>`` and parse its JSON line.
+
+    Returns ``{"status": "timeout" | "error", ...}`` on failure instead of
+    raising, so one bad case never aborts the whole matrix.
+    """
     cmd = [sys.executable, "-m", "benchmark.worker", *args]
     try:
         proc = subprocess.run(
@@ -57,6 +64,11 @@ def _call_worker(args: list[str], env: dict, timeout: int) -> dict:
 
 
 def probe_backends(backend_names: list[str]) -> dict[str, dict]:
+    """Import-probe each backend in a subprocess.
+
+    Returns ``{name: {"available", "version", "reason"}}``; the version is
+    best-effort (module ``__version__`` or installed distribution metadata).
+    """
     info: dict[str, dict] = {}
     for name in backend_names:
         info[name] = _call_worker(["--probe", name], _worker_env(1), timeout=180)
@@ -64,6 +76,7 @@ def probe_backends(backend_names: list[str]) -> dict[str, dict]:
 
 
 def selftest_backends(backend_names: list[str]) -> dict[str, dict]:
+    """Run the known-answer check (``worker --selftest``) per backend."""
     results: dict[str, dict] = {}
     for name in backend_names:
         results[name] = _call_worker(["--selftest", name], _worker_env(1), timeout=180)
@@ -113,6 +126,8 @@ def expand_groups(groups: list[Group]) -> list[dict]:
 
 
 def _case_key(case: dict) -> tuple:
+    """Identity of a case for ``--resume`` dedup (everything that changes
+    what is being measured)."""
     return (
         case["backend"], case["circuit"], case["n_qubits"], case["depth"],
         case["noise"], case["shots"], case["threads"], case["repeats"],
@@ -120,6 +135,7 @@ def _case_key(case: dict) -> tuple:
 
 
 def _stats(times_ms: list[float]) -> dict:
+    """median / mean / std / min over the timed repeats, in milliseconds."""
     if not times_ms:
         return {}
     ordered = sorted(times_ms)
@@ -136,6 +152,8 @@ def _stats(times_ms: list[float]) -> dict:
 
 
 def collect_env_meta(preset_name: str, probes: dict, selftests: dict) -> dict:
+    """Snapshot of the run environment (CPU, memory, python, per-backend
+    versions and selftest status) stored alongside the results."""
     def _cpu_model() -> str:
         try:
             with open("/proc/cpuinfo", encoding="utf-8") as fh:
@@ -176,6 +194,14 @@ def run_matrix(
     limit: int | None = None,
     resume: bool = False,
 ) -> dict:
+    """Execute a preset matrix and persist a results document.
+
+    Flow: probe availability -> selftest every reachable backend (failures
+    are excluded) -> expand cases -> run each in a worker subprocess,
+    updating ``out_path`` after every case so an interrupted run can be
+    resumed with ``resume=True`` (completed cases are reused, failures
+    re-run).  Returns the final ``{"meta", "dropped", "results"}`` dict.
+    """
     groups = PRESETS[preset_name]
     cases = expand_groups(groups)
 

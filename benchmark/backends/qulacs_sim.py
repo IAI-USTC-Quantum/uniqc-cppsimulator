@@ -17,6 +17,7 @@ from benchmark.registry import register_backend
 
 
 def _add_op(circ, gate, op):
+    """Record one IR op (gate or channel) on a qulacs QuantumCircuit."""
     q = op.qubits
     if op.name == "h":
         circ.add_H_gate(q[0])

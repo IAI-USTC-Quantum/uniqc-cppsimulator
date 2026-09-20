@@ -9,6 +9,8 @@ from benchmark.registry import register_backend
 
 
 def build_braket_circuit(circuit: Circuit):
+    """Compile IR gates (channels unsupported) to a Braket ``Circuit`` with a
+    ``state_vector()`` result type for exact amplitude readout."""
     from braket.circuits import Circuit
 
     c = Circuit()

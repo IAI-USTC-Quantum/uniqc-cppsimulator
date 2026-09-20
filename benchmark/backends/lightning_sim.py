@@ -8,6 +8,8 @@ from benchmark.registry import register_backend
 
 
 def build_pl_tape(circuit: Circuit):
+    """Compile IR gates (channels unsupported) to a PennyLane QuantumScript
+    measuring ``probs(wires=0)``."""
     import pennylane as qml
 
     ops = []

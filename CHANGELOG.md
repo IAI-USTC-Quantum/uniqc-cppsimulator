@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Sphinx 文档（`docs/`）**：使用/构建/测试指南、基准套件使用、`benchmark` 包 API 参考（autodoc）与 `uniqc_cpp` 扩展 API 参考；补全 `benchmark` 包全部 docstring。构建：`python -m sphinx -b html docs docs/_build/html`（零告警）。
 - **跨模拟器 CPU benchmark 套件（`benchmark/`）**：以 `uniqc_cpp` 为对象与主流 pip 可装 CPU 模拟器（Qiskit Aer、Cirq、qsim、Qulacs、PennyLane lightning、Qibo、quimb、QuTiP、Braket 本地模拟器等）对比；统一线路 IR + 注册表扩展点（线路族 / 噪声预设 / 后端适配器 / 矩阵预设 / 图表）；单线程 vs 多线程基线（外部模拟器走原生线程旋钮，`uniqc_cpp` 走进程池并行采样吞吐）；结果 JSON 落盘 + 图表 + 报告生成（`python -m benchmark run|plot|report`）。摘要见 README"性能基准"，详情见 `doc/benchmark.md`。
 
 ## [1.0.1] - 2026-08-23

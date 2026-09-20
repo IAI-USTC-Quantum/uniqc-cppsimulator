@@ -19,6 +19,12 @@ from benchmark.registry import register_backend
 
 
 def _apply_ops(sim, ops) -> None:
+    """Apply IR ops (gates + channels) to a uniqc simulator object.
+
+    Works for both simulator classes: they share the same Python API for
+    gates, and the noise channels are stochastic on the statevector but
+    deterministic superoperators on the density operator.
+    """
     for op in ops:
         name, q = op.name, op.qubits
         if name == "h":

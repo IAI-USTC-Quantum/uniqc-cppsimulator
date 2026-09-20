@@ -77,7 +77,13 @@ def probe(backend_name: str) -> None:
 
 
 def _reference_cases():
-    """Known-answer circuits used to validate adapter correctness/endianness."""
+    """Known-answer circuits used to validate adapter correctness/endianness.
+
+    Each entry is ``(circuit, expected_p_q0_1, tolerance)``; ``qft3`` is
+    included because its amplitudes exercise the full gate set (H, Rz, CX,
+    SWAP) and are uniform, so P(q0=1) must be exactly 0.5 regardless of
+    endianness mistakes elsewhere.
+    """
     from benchmark.circuits import qft
     from benchmark.ir import Circuit, Op
 
@@ -119,6 +125,14 @@ def run_selftest(backend_name: str, threads: int = 1) -> None:
 
 
 def run_case(case: dict) -> None:
+    """Execute one benchmark case and emit its JSON record.
+
+    Builds the circuit from the registry, applies the noise preset, checks
+    support, runs one warm-up + ``case["repeats"]`` timed repeats of
+    ``backend.run`` (seed varies per repeat), then reports the raw times,
+    the readout scalar and peak RSS.  Emits ``{"status": "skip", ...}``
+    when the backend cannot run this case.
+    """
     from benchmark.backends import BACKENDS
     from benchmark.ir import apply_noise
     from benchmark.registry import CIRCUITS, NOISE
@@ -154,6 +168,7 @@ def run_case(case: dict) -> None:
 
 
 def main() -> None:
+    """Entry point for ``python -m benchmark.worker`` (see module docstring)."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--case-json")
     parser.add_argument("--probe")

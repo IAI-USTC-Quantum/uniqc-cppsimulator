@@ -13,6 +13,7 @@ from benchmark.registry import CIRCUITS, NOISE
 
 
 def cmd_list(args: argparse.Namespace) -> None:
+    """Print registered backends (with availability), circuits, noise and presets."""
     if args.section in ("backends", "all"):
         print("backends:")
         for name, cls in sorted(BACKENDS.items()):
@@ -31,6 +32,7 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 
 def cmd_selftest(args: argparse.Namespace) -> None:
+    """Run the known-answer check for the requested (or all) backends."""
     names = args.backends.split(",") if args.backends else sorted(BACKENDS)
     results = runner.selftest_backends(names)
     failed = []
@@ -46,6 +48,7 @@ def cmd_selftest(args: argparse.Namespace) -> None:
 
 
 def cmd_run(args: argparse.Namespace) -> None:
+    """Execute a preset matrix (see ``runner.run_matrix``)."""
     selected = args.backends.split(",") if args.backends else None
     runner.run_matrix(
         preset_name=args.preset,
@@ -57,12 +60,14 @@ def cmd_run(args: argparse.Namespace) -> None:
 
 
 def cmd_plot(args: argparse.Namespace) -> None:
+    """Render every registered figure from a results JSON."""
     figures = plotting.plot_all(args.results, args.out_dir)
     for fig, path in figures:
         print(f"wrote {path}")
 
 
 def cmd_report(args: argparse.Namespace) -> None:
+    """Generate ``doc/benchmark.md`` and the README summary include."""
     with open(args.results, encoding="utf-8") as fh:
         data = json.load(fh)
     doc = report.write_report(data, args.doc_dir)
@@ -72,6 +77,7 @@ def cmd_report(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Argument parser for ``python -m benchmark <command>``."""
     parser = argparse.ArgumentParser(prog="benchmark", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
 

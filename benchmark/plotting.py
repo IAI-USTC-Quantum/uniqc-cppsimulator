@@ -28,6 +28,7 @@ def plotter(func: FigureFunc) -> FigureFunc:
 
 
 def _ok(results: list[dict]) -> list[dict]:
+    """Only successfully measured records."""
     return [r for r in results if r.get("status") == "ok"]
 
 
@@ -55,6 +56,7 @@ def _label(backend: str) -> str:
 
 
 def _save(fig, out_dir: str, name: str) -> tuple[str, str]:
+    """Write a figure to ``out_dir/name`` and return (name, path)."""
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
     fig.savefig(path, dpi=150, bbox_inches="tight")
@@ -63,6 +65,7 @@ def _save(fig, out_dir: str, name: str) -> tuple[str, str]:
 
 
 def _select(results: list[dict], *, group: str, threads: int | None = None):
+    """Filter to one matrix group (and optionally one thread tier)."""
     rows = [r for r in _ok(results) if r.get("group") == group]
     if threads is not None:
         rows = [r for r in rows if r["threads"] == threads]
@@ -234,6 +237,11 @@ def fig_sampling_throughput(data: dict, out_dir: str) -> tuple[str, str]:
 
 
 def plot_all(results_path: str, out_dir: str) -> list[tuple[str, str]]:
+    """Render every registered figure from a results JSON.
+
+    Returns ``[(figure_name, output_path)]`` for the figures that produced
+    output; figures whose data slice is empty are skipped silently.
+    """
     import json
 
     with open(results_path, encoding="utf-8") as fh:

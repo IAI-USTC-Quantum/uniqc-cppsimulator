@@ -18,16 +18,25 @@ SEED = 20260920
 
 @dataclass(frozen=True)
 class Group:
-    name: str
+    """One slice of a benchmark matrix.
+
+    A group fixes every dimension except the ones it varies: it names the
+    backends (or the ``all_sv`` / ``all_dm`` wildcards), the circuit
+    families, the qubit sweep, the noise preset, whether shots are sampled,
+    and the thread tiers.  ``expand_groups`` turns each group into concrete
+    case dicts and drops combinations a backend cannot run.
+    """
+
+    name: str  # human-readable group id, also stored on each result record
     backends: tuple[str, ...]  # backend names, or ("all_sv",) / ("all_dm",) wildcards
-    circuits: tuple[str, ...] = ("ghz",)
-    qubits: tuple[int, ...] = (4, 8)
-    depth: int = 1
-    noise: str = "none"
-    shots: int = 0
-    threads: tuple[int, ...] = (1,)
-    repeats: int = 3
-    timeout_s: int = 300
+    circuits: tuple[str, ...] = ("ghz",)  # circuit families (must be registered)
+    qubits: tuple[int, ...] = (4, 8)  # qubit-count sweep
+    depth: int = 1  # layer depth for parametric families (ghz/qft ignore it)
+    noise: str = "none"  # noise preset name (must be registered)
+    shots: int = 0  # 0 = exact probabilities, >0 = sampled trajectories
+    threads: tuple[int, ...] = (1,)  # thread tiers to expand over
+    repeats: int = 3  # timed repetitions per case (after one warm-up)
+    timeout_s: int = 300  # per-case worker timeout (runner adds 60 s grace)
 
 
 PRESETS: dict[str, list[Group]] = {

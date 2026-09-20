@@ -17,6 +17,13 @@ from benchmark.registry import register_backend
 
 
 def build_cirq_circuit(circuit: Circuit, with_channels: bool, phase_via_rz: bool = False):
+    """Compile IR to a ``cirq.Circuit`` plus its qubit order.
+
+    ``with_channels`` inlines the noise channel ops (density backend only).
+    ``phase_via_rz`` swaps S/T-family gates for phase-equivalent Rz so
+    backends without S†/T† instructions (qsim) can still run the circuit
+    identically up to global phase.
+    """
     import cirq
 
     qubits = cirq.LineQubit.range(circuit.n_qubits)

@@ -8,6 +8,7 @@ from benchmark.registry import register_backend
 
 
 def build_qibo_circuit(circuit: Circuit):
+    """Compile IR gates (channels unsupported) to a ``qibo.models.Circuit``."""
     import qibo
     import qibo.gates as qg
 
