@@ -1,4 +1,5 @@
 #include "simulator.h"
+#include "threading.h"
 namespace uniqc {
 
     using namespace statevector_simulator_impl;
@@ -804,14 +805,17 @@ namespace uniqc {
         double prob = (outcome == 0) ? p0 : (1.0 - p0);
         double norm = std::sqrt(prob);
 
-        for (size_t i = 0; i < state.size(); ++i)
-        {
-            size_t bit = (i >> qn) & 1ull;
-            if (bit != outcome)
-                state[i] = 0;
-            else if (norm > 1e-14)
-                state[i] /= norm;
-        }
+        const size_t n_state = state.size();
+        parallel_for(0, n_state, [&](size_t begin, size_t end) {
+            for (size_t i = begin; i < end; ++i)
+            {
+                size_t bit = (i >> qn) & 1ull;
+                if (bit != outcome)
+                    state[i] = 0;
+                else if (norm > 1e-14)
+                    state[i] /= norm;
+            }
+        });
         return outcome;
     }
 
@@ -861,11 +865,20 @@ namespace uniqc {
         std::vector<dtype> ret;
         ret.resize(pow2(measure_list.size()));
 
-        for (size_t i = 0; i < pow2(total_qubit); ++i)
-        {
-            size_t meas_idx = get_state_with_qubit(i, measure_map);
-            ret[meas_idx] += abs_sqr(state[i]);
-        }
+        const size_t n_state = pow2(total_qubit);
+        const size_t nchunk = parallel_worker_count(n_state);
+        std::vector<std::vector<dtype>> partial(nchunk, std::vector<dtype>(ret.size(), 0.0));
+        parallel_chunks(0, n_state, [&](size_t c, size_t b, size_t e) {
+            auto& local = partial[c];
+            for (size_t i = b; i < e; ++i)
+            {
+                size_t meas_idx = get_state_with_qubit(i, measure_map);
+                local[meas_idx] += abs_sqr(state[i]);
+            }
+        });
+        for (auto& p : partial)
+            for (size_t k = 0; k < ret.size(); ++k)
+                ret[k] += p[k];
         return ret;
     }
 

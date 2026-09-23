@@ -16,6 +16,7 @@
 #include "simulator.h"
 #include "density_operator_simulator.h"
 #include "rng.h"
+#include "threading_control.h"
 using namespace std;
 using namespace pybind11::literals;
 namespace py = pybind11;
@@ -25,6 +26,15 @@ PYBIND11_MODULE(uniqc_cpp, m)
 	m.doc() = "[Module uniqc_cpp]";
 	m.def("seed", &uniqc::seed);
 	m.def("rand", &uniqc::rand);
+
+	m.def("set_parallel_enabled", &uniqc::set_parallel_enabled, py::arg("enabled"),
+		"Turn the global multithreading switch on/off (default off).");
+	m.def("is_parallel_enabled", &uniqc::is_parallel_enabled,
+		"Whether the global multithreading switch is on.");
+	m.def("set_num_threads", &uniqc::set_num_threads, py::arg("n"),
+		"Set the global worker-thread count (>= 1, clamped to hardware concurrency).");
+	m.def("get_num_threads", &uniqc::get_num_threads,
+		"Current global worker-thread count.");
 
 	auto py_arg_global_controller = (py::arg("global_controller") = std::vector<size_t>{});
 	auto py_arg_dagger = (py::arg("dagger") = false);

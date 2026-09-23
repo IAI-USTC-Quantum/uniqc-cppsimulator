@@ -5,6 +5,8 @@ on the ``uniqc`` Python package. It includes:
 
 - smoke tests for the two simulator backends (statevector / density
   operator), measurement, and the global RNG;
+- global multithreading control (switch, thread count, parallel-vs-serial
+  equivalence);
 - QRAM argument validation (migrated from UnifiedQuantum's
   ``uniqc/test/core/test_qram.py``);
 - global-control range validation (migrated from UnifiedQuantum's
@@ -13,6 +15,7 @@ on the ``uniqc`` Python package. It includes:
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 
@@ -21,6 +24,16 @@ import pytest
 import uniqc_cpp
 
 SIMULATORS = ["StatevectorSimulator", "DensityOperatorSimulator"]
+
+
+@pytest.fixture(autouse=True)
+def _serial_threading_defaults():
+    """Kernel threading is off around every test (the library default)."""
+    uniqc_cpp.set_num_threads(1)
+    uniqc_cpp.set_parallel_enabled(False)
+    yield
+    uniqc_cpp.set_num_threads(1)
+    uniqc_cpp.set_parallel_enabled(False)
 
 
 def make_sim(name: str, n_qubits: int = 2):
@@ -213,3 +226,129 @@ def test_twoqubit_depolarizing_probability_applies_per_call() -> None:
         rates = {first: low_or_high_first, second: low_or_high_second}
         assert rates[0.1] == pytest.approx(0.08, abs=0.02)
         assert rates[0.9] == pytest.approx(0.72, abs=0.04)
+
+# ---------------------------------------------------------------------------
+# Global multithreading control
+# ---------------------------------------------------------------------------
+
+
+def test_threading_defaults_and_switch() -> None:
+    assert uniqc_cpp.is_parallel_enabled() is False
+    assert uniqc_cpp.get_num_threads() == 1
+
+    uniqc_cpp.set_parallel_enabled(True)
+    assert uniqc_cpp.is_parallel_enabled() is True
+    uniqc_cpp.set_parallel_enabled(False)
+    assert uniqc_cpp.is_parallel_enabled() is False
+
+    n = min(4, os.cpu_count() or 1)
+    uniqc_cpp.set_num_threads(n)
+    assert uniqc_cpp.get_num_threads() == n
+
+    # above hardware concurrency the count is clamped, not rejected
+    uniqc_cpp.set_num_threads((os.cpu_count() or 1) + 1000)
+    assert uniqc_cpp.get_num_threads() == (os.cpu_count() or 1)
+
+    with pytest.raises(ValueError):
+        uniqc_cpp.set_num_threads(0)
+
+
+def _run_mixed_circuit(name: str, n_qubits: int):
+    """A circuit touching 1q/2q/3q gates, parametric gates and controls."""
+    sim = getattr(uniqc_cpp, name)()
+    sim.init_n_qubit(n_qubits)
+    for q in range(n_qubits):
+        sim.hadamard(q)
+    for q in range(n_qubits):
+        sim.rz(q, 0.3 * (q + 1))
+    sim.x(0)
+    sim.y(1)
+    sim.z(2)
+    sim.s(3)
+    sim.t(4)
+    sim.cnot(0, 1)
+    sim.cz(1, 2)
+    sim.swap(2, 3)
+    sim.iswap(3, 4)
+    sim.xy(4, 5, 0.7)
+    sim.xx(5, 6, 0.2)
+    sim.yy(6, 7, 0.4)
+    sim.zz(7, 8, 0.9)
+    sim.toffoli(0, 1, 9)
+    sim.cswap(2, 10, 11)
+    sim.phase2q(12, 13, 0.1, 0.2, 0.3)
+    sim.hadamard(1, [13])  # gate with a global controller
+    sim.cnot(2, 3, [12])
+    sim.xy(5, 6, 0.25, [0], dagger=True)
+    return sim
+
+
+def test_parallel_gates_match_serial_bitwise() -> None:
+    """Gate kernels have no reductions, so the parallel state must be
+    bit-for-bit identical to the serial one (14 qubits = 2^14 amplitudes
+    crosses the MIN_PARALLEL_WORK threshold, exercising real threads)."""
+    n_qubits = 14
+    serial = _run_mixed_circuit("StatevectorSimulator", n_qubits)
+    state_serial = serial.state
+
+    uniqc_cpp.set_num_threads(min(8, os.cpu_count() or 1))
+    uniqc_cpp.set_parallel_enabled(True)
+    parallel = _run_mixed_circuit("StatevectorSimulator", n_qubits)
+
+    assert parallel.state == state_serial
+
+
+def test_parallel_readouts_match_serial_approximately() -> None:
+    """Probability readouts sum amplitudes in chunk order, so only
+    floating-point-order differences are allowed (~1e-15 relative)."""
+    n_qubits = 14
+    uniqc_cpp.set_num_threads(min(8, os.cpu_count() or 1))
+    uniqc_cpp.set_parallel_enabled(True)
+    parallel = _run_mixed_circuit("StatevectorSimulator", n_qubits)
+
+    uniqc_cpp.set_parallel_enabled(False)
+    serial = _run_mixed_circuit("StatevectorSimulator", n_qubits)
+
+    assert parallel.pmeasure([0, 1]) == pytest.approx(
+        serial.pmeasure([0, 1]), rel=1e-9, abs=1e-12)
+    assert parallel.pmeasure(0) == pytest.approx(serial.pmeasure(0), rel=1e-9, abs=1e-12)
+    assert parallel.get_prob(0, 1) == pytest.approx(serial.get_prob(0, 1), rel=1e-9, abs=1e-12)
+    assert parallel.get_prob({0: 1, 3: 0}) == pytest.approx(
+        serial.get_prob({0: 1, 3: 0}), rel=1e-9, abs=1e-12)
+
+
+def test_parallel_measure_qubit_reproducible_across_thread_counts() -> None:
+    """rand() is drawn on the calling thread, so measurement outcomes must
+    not depend on the kernel thread count."""
+    uniqc_cpp.seed(20260921)
+    serial = _run_mixed_circuit("StatevectorSimulator", 14)
+    outcome_serial = serial.measure_qubit(1)
+
+    uniqc_cpp.set_num_threads(min(8, os.cpu_count() or 1))
+    uniqc_cpp.set_parallel_enabled(True)
+    uniqc_cpp.seed(20260921)
+    parallel = _run_mixed_circuit("StatevectorSimulator", 14)
+    outcome_parallel = parallel.measure_qubit(1)
+
+    assert outcome_parallel == outcome_serial
+    assert parallel.pmeasure(1) == pytest.approx(serial.pmeasure(1), rel=1e-9)
+
+
+def test_parallel_density_operator_matches_serial() -> None:
+    """The density-matrix row loops parallelize too (8 qubits: N^2 = 64k
+    matrix elements reaches the work threshold via the per-row hint)."""
+    def build() -> list[float]:
+        sim = uniqc_cpp.DensityOperatorSimulator()
+        sim.init_n_qubit(8)
+        for q in range(8):
+            sim.hadamard(q)
+        for q in range(7):
+            sim.cnot(q, q + 1)
+            sim.depolarizing(q, 0.01)
+        return sim.pmeasure([0, 1])
+
+    serial = build()
+
+    uniqc_cpp.set_num_threads(min(8, os.cpu_count() or 1))
+    uniqc_cpp.set_parallel_enabled(True)
+    assert build() == pytest.approx(serial, rel=1e-9, abs=1e-12)

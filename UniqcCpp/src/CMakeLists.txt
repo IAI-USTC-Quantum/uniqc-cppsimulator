@@ -10,6 +10,8 @@ set(UniqcCppCoreSrc_H
     ${CMAKE_CURRENT_SOURCE_DIR}/simulator_density_op_impl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/simulator_impl.h
     ${CMAKE_CURRENT_SOURCE_DIR}/simulator_statevector_impl.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/threading.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/threading_control.h
 )
 set(UniqcCppCoreSrc
     ${CMAKE_CURRENT_SOURCE_DIR}/basic_math.cpp
@@ -19,5 +21,7 @@ set(UniqcCppCoreSrc
     ${CMAKE_CURRENT_SOURCE_DIR}/simulator_common.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/simulator_density_op_impl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/simulator_statevector_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/threading.cpp
 )
 add_library(${PROJECT_NAME} STATIC ${UniqcCppCoreSrc_H} ${UniqcCppCoreSrc})
+target_link_libraries(${PROJECT_NAME} PUBLIC Threads::Threads)

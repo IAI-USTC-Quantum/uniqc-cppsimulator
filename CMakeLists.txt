@@ -29,5 +29,6 @@ endif()
 
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
+find_package(Threads REQUIRED)
 
 add_subdirectory(UniqcCpp)

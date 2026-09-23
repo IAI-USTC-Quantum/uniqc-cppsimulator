@@ -1,6 +1,7 @@
 #include "basic_math.h"
 #include "density_operator_simulator.h"
 #include "simulator.h"
+#include "threading.h"
 
 #include <cmath>
 #include <exception>
@@ -71,6 +72,25 @@ int main() {
             std::cerr << "DensityOperatorSimulator::uu15 accepted a wrong-sized parameter vector\n";
             return 1;
         }
+
+        // 多线程路径：全局开关 + 线程数下 Bell 态概率不变
+        uniqc::set_parallel_enabled(true);
+        uniqc::set_num_threads(4);
+        uniqc::StatevectorSimulator parallel_sim;
+        parallel_sim.init_n_qubit(16);
+        for (size_t q = 0; q < 16; ++q) parallel_sim.hadamard(q);
+        for (size_t q = 0; q + 1 < 16; ++q) parallel_sim.cnot(q, q + 1);
+        const auto parallel_probs = parallel_sim.pmeasure({0, 1});
+        // 全叠加态上 CNOT 链后测 {q0,q1}：四格各 1/4
+        for (double p : parallel_probs) {
+            if (std::abs(p - 0.25) > uniqc::eps) {
+                std::cerr << "parallel Bell-state probabilities are incorrect\n";
+                return 1;
+            }
+        }
+        // 结束后恢复默认
+        uniqc::set_num_threads(1);
+        uniqc::set_parallel_enabled(false);
 
         std::cout << "UnifiedQuantum C++ smoke test passed\n";
         return 0;

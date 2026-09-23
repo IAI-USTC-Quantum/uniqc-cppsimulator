@@ -28,6 +28,23 @@ sdist 源码编译，需要满足下方"源码构建要求"。
 
 完整 API 见 :doc:`api_uniqc_cpp` 与类型存根 ``uniqc_cpp.pyi``。
 
+多线程
+------
+
+内核提供**全局**多线程开关与线程数控制（默认关闭，单线程，与历史行为一致）：
+
+.. code-block:: python
+
+   import uniqc_cpp
+
+   uniqc_cpp.set_num_threads(8)          # 全局线程数（>=1，超出硬件并发数会被截断）
+   uniqc_cpp.set_parallel_enabled(True)  # 打开全局开关；False 时任何调用都单线程执行
+   print(uniqc_cpp.get_num_threads(), uniqc_cpp.is_parallel_enabled())
+
+两个设置均为进程级全局状态，作用于所有模拟器实例，可在任意时刻切换。门操作
+（含受控门）结果与单线程**逐位一致**；仅概率类读出（``pmeasure`` / ``get_prob``）
+因浮点求和顺序不同存在 ~1e-15 量级的差异。小规模态（< 2^14 幅度）自动回落单线程。
+
 源码构建要求
 ------------
 

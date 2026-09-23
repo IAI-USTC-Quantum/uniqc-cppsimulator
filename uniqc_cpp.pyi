@@ -7,7 +7,16 @@ from __future__ import annotations
 import collections.abc
 import typing
 
-__all__: list[str] = ["DensityOperatorSimulator", "StatevectorSimulator", "rand", "seed"]
+__all__: list[str] = [
+    "DensityOperatorSimulator",
+    "StatevectorSimulator",
+    "get_num_threads",
+    "is_parallel_enabled",
+    "rand",
+    "seed",
+    "set_num_threads",
+    "set_parallel_enabled",
+]
 
 class DensityOperatorSimulator:
     max_qubit_num: typing.ClassVar[int] = 10  # read-only
@@ -592,5 +601,9 @@ class StatevectorSimulator:
     @property
     def total_qubit(self) -> int: ...
 
+def get_num_threads() -> int: ...
+def is_parallel_enabled() -> bool: ...
 def rand() -> float: ...
 def seed(arg0: typing.SupportsInt | typing.SupportsIndex) -> None: ...
+def set_num_threads(n: typing.SupportsInt | typing.SupportsIndex) -> None: ...
+def set_parallel_enabled(enabled: bool) -> None: ...

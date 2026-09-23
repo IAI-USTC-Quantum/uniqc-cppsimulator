@@ -1,4 +1,5 @@
 #include "simulator_density_op_impl.h"
+#include "threading.h"
 
 namespace uniqc {
 namespace density_operator_simulator_impl {
@@ -71,41 +72,43 @@ namespace density_operator_simulator_impl {
 
             // 按 controller_mask 做 block-diagonal 分解
             // 遍历所有 control sub-block 的 (row_base, col_base)
-            for (size_t i = 0; i < N; ++i) {
-                if (i & target_mask) continue; // 跳过 target bit=1 的行（与原非受控版一致）
+            parallel_for(0, N, N, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i) {
+                    if (i & target_mask) continue; // 跳过 target bit=1 的行（与原非受控版一致）
 
-                // control qubit 在 row 端的状态
-                const bool a = ((i & controller_mask) == controller_mask);
+                    // control qubit 在 row 端的状态
+                    const bool a = ((i & controller_mask) == controller_mask);
 
-                for (size_t j = 0; j < N; ++j) {
-                    if (j & target_mask) continue; // 跳过 target bit=1 的列
+                    for (size_t j = 0; j < N; ++j) {
+                        if (j & target_mask) continue; // 跳过 target bit=1 的列
 
-                    // control qubit 在 col 端的状态
-                    const bool b = ((j & controller_mask) == controller_mask);
+                        // control qubit 在 col 端的状态
+                        const bool b = ((j & controller_mask) == controller_mask);
 
-                    if (!a && !b) continue; // 不变，跳过
+                        if (!a && !b) continue; // 不变，跳过
 
-                    // 提取 target qubit 的 2x2 sub-block
-                    // ρ_sub[alpha, beta] = rho[i + alpha*target_mask, j + beta*target_mask]
-                    complex_t& r00 = val(state, i, j, N);
-                    complex_t& r01 = val(state, i, j + target_mask, N);
-                    complex_t& r10 = val(state, i + target_mask, j, N);
-                    complex_t& r11 = val(state, i + target_mask, j + target_mask, N);
+                        // 提取 target qubit 的 2x2 sub-block
+                        // ρ_sub[alpha, beta] = rho[i + alpha*target_mask, j + beta*target_mask]
+                        complex_t& r00 = val(state, i, j, N);
+                        complex_t& r01 = val(state, i, j + target_mask, N);
+                        complex_t& r10 = val(state, i + target_mask, j, N);
+                        complex_t& r11 = val(state, i + target_mask, j + target_mask, N);
 
-                    if (a && b) {
-                        // ρ_sub' = U * ρ_sub * U†
-                        dm_evolve_2x2(u00, u01, u10, u11, r00, r01, r10, r11);
-                    }
-                    else if (!a && b) {
-                        // ρ_sub' = ρ_sub * U†
-                        dm_right_mul_udag_2x2(u00, u01, u10, u11, r00, r01, r10, r11);
-                    }
-                    else { // a && !b
-                        // ρ_sub' = U * ρ_sub
-                        dm_left_mul_u_2x2(u00, u01, u10, u11, r00, r01, r10, r11);
+                        if (a && b) {
+                            // ρ_sub' = U * ρ_sub * U†
+                            dm_evolve_2x2(u00, u01, u10, u11, r00, r01, r10, r11);
+                        }
+                        else if (!a && b) {
+                            // ρ_sub' = ρ_sub * U†
+                            dm_right_mul_udag_2x2(u00, u01, u10, u11, r00, r01, r10, r11);
+                        }
+                        else { // a && !b
+                            // ρ_sub' = U * ρ_sub
+                            dm_left_mul_u_2x2(u00, u01, u10, u11, r00, r01, r10, r11);
+                        }
                     }
                 }
-            }
+            });
         }
 
         void u22_unsafe_impl(std::vector<std::complex<double>>& state, size_t qn, complex_t u00, complex_t u01, complex_t u10, complex_t u11, size_t total_qubit, size_t controller_mask)
@@ -120,24 +123,26 @@ namespace density_operator_simulator_impl {
             const size_t N = pow2(total_qubit);
             const size_t mask = pow2(qn);            // 目标量子比特的掩码
 
-            for (size_t i = 0; i < N; ++i) {
-                // 检查控制位是否满足且目标比特为 0
-                if ((i & mask) != 0) continue;
+            parallel_for(0, N, N, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i) {
+                    // 检查控制位是否满足且目标比特为 0
+                    if ((i & mask) != 0) continue;
 
-                // 遍历所有满足控制位且目标比特为 0 的 j
-                for (size_t j = 0; j < N; ++j) {
-                    if ((j & mask) != 0) continue;
+                    // 遍历所有满足控制位且目标比特为 0 的 j
+                    for (size_t j = 0; j < N; ++j) {
+                        if ((j & mask) != 0) continue;
 
-                    // 提取子矩阵元素（无需重复计算索引）
-                    complex_t& i0j0 = val(state, i, j, N);
-                    complex_t& i1j0 = val(state, i + mask, j, N);
-                    complex_t& i0j1 = val(state, i, j + mask, N);
-                    complex_t& i1j1 = val(state, i + mask, j + mask, N);
+                        // 提取子矩阵元素（无需重复计算索引）
+                        complex_t& i0j0 = val(state, i, j, N);
+                        complex_t& i1j0 = val(state, i + mask, j, N);
+                        complex_t& i0j1 = val(state, i, j + mask, N);
+                        complex_t& i1j1 = val(state, i + mask, j + mask, N);
 
-                    // 应用演化
-                    evolve_u22(u00, u01, u10, u11, i0j0, i0j1, i1j0, i1j1);
+                        // 应用演化
+                        evolve_u22(u00, u01, u10, u11, i0j0, i0j1, i1j0, i1j1);
+                    }
                 }
-            }
+            });
         }
 
         void u22_unsafe_impl(std::vector<std::complex<double>>& state, size_t qn, u22_t unitary, size_t total_qubit, size_t controller_mask)
@@ -170,51 +175,53 @@ namespace density_operator_simulator_impl {
             const size_t mask1 = pow2(qn1);
             const size_t mask2 = pow2(qn2);
 
-            for (size_t i = 0; i < N; ++i) {
-                // 提前过滤条件：控制位 + 目标量子比特为 0
-                if ((i & (mask1 | mask2)) != 0) continue;
-                const bool a = ((i & controller_mask) == controller_mask);
+            parallel_for(0, N, N, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i) {
+                    // 提前过滤条件：控制位 + 目标量子比特为 0
+                    if ((i & (mask1 | mask2)) != 0) continue;
+                    const bool a = ((i & controller_mask) == controller_mask);
 
-                for (size_t j = 0; j < N; ++j) {
-                    if ((j & (mask1 | mask2)) != 0) continue;
-                    const bool b = ((j & controller_mask) == controller_mask);
+                    for (size_t j = 0; j < N; ++j) {
+                        if ((j & (mask1 | mask2)) != 0) continue;
+                        const bool b = ((j & controller_mask) == controller_mask);
 
-                    // 提取子矩阵引用
-                    complex_t& i00j00 = val(state, i, j, N);
-                    complex_t& i01j00 = val(state, i + mask1, j, N);
-                    complex_t& i10j00 = val(state, i + mask2, j, N);
-                    complex_t& i11j00 = val(state, i + mask1 + mask2, j, N);
+                        // 提取子矩阵引用
+                        complex_t& i00j00 = val(state, i, j, N);
+                        complex_t& i01j00 = val(state, i + mask1, j, N);
+                        complex_t& i10j00 = val(state, i + mask2, j, N);
+                        complex_t& i11j00 = val(state, i + mask1 + mask2, j, N);
 
-                    complex_t& i00j01 = val(state, i, j + mask1, N);
-                    complex_t& i01j01 = val(state, i + mask1, j + mask1, N);
-                    complex_t& i10j01 = val(state, i + mask2, j + mask1, N);
-                    complex_t& i11j01 = val(state, i + mask1 + mask2, j + mask1, N);
+                        complex_t& i00j01 = val(state, i, j + mask1, N);
+                        complex_t& i01j01 = val(state, i + mask1, j + mask1, N);
+                        complex_t& i10j01 = val(state, i + mask2, j + mask1, N);
+                        complex_t& i11j01 = val(state, i + mask1 + mask2, j + mask1, N);
 
-                    complex_t& i00j10 = val(state, i, j + mask2, N);
-                    complex_t& i01j10 = val(state, i + mask1, j + mask2, N);
-                    complex_t& i10j10 = val(state, i + mask2, j + mask2, N);
-                    complex_t& i11j10 = val(state, i + mask1 + mask2, j + mask2, N);
+                        complex_t& i00j10 = val(state, i, j + mask2, N);
+                        complex_t& i01j10 = val(state, i + mask1, j + mask2, N);
+                        complex_t& i10j10 = val(state, i + mask2, j + mask2, N);
+                        complex_t& i11j10 = val(state, i + mask1 + mask2, j + mask2, N);
 
-                    complex_t& i00j11 = val(state, i, j + mask1 + mask2, N);
-                    complex_t& i01j11 = val(state, i + mask1, j + mask1 + mask2, N);
-                    complex_t& i10j11 = val(state, i + mask2, j + mask1 + mask2, N);
-                    complex_t& i11j11 = val(state, i + mask1 + mask2, j + mask1 + mask2, N);
+                        complex_t& i00j11 = val(state, i, j + mask1 + mask2, N);
+                        complex_t& i01j11 = val(state, i + mask1, j + mask1 + mask2, N);
+                        complex_t& i10j11 = val(state, i + mask2, j + mask1 + mask2, N);
+                        complex_t& i11j11 = val(state, i + mask1 + mask2, j + mask1 + mask2, N);
 
 
-                    if (a && b) {
-                        evolve_u44(u00, u01, u02, u03, u10, u11, u12, u13, u20, u21, u22, u23, u30, u31, u32, u33,
-                            i00j00, i00j01, i00j10, i00j11, i01j00, i01j01, i01j10, i01j11, i10j00, i10j01, i10j10, i10j11, i11j00, i11j01, i11j10, i11j11);
-                    }
-                    else if (!a && b) {
-                        apply_irho_udag_u44(u00, u01, u02, u03, u10, u11, u12, u13, u20, u21, u22, u23, u30, u31, u32, u33,
-                            i00j00, i00j01, i00j10, i00j11, i01j00, i01j01, i01j10, i01j11, i10j00, i10j01, i10j10, i10j11, i11j00, i11j01, i11j10, i11j11);
-                    }
-                    else if (a && !b) {
-                        apply_urho_i_u44(u00, u01, u02, u03, u10, u11, u12, u13, u20, u21, u22, u23, u30, u31, u32, u33,
-                            i00j00, i00j01, i00j10, i00j11, i01j00, i01j01, i01j10, i01j11, i10j00, i10j01, i10j10, i10j11, i11j00, i11j01, i11j10, i11j11);
+                        if (a && b) {
+                            evolve_u44(u00, u01, u02, u03, u10, u11, u12, u13, u20, u21, u22, u23, u30, u31, u32, u33,
+                                i00j00, i00j01, i00j10, i00j11, i01j00, i01j01, i01j10, i01j11, i10j00, i10j01, i10j10, i10j11, i11j00, i11j01, i11j10, i11j11);
+                        }
+                        else if (!a && b) {
+                            apply_irho_udag_u44(u00, u01, u02, u03, u10, u11, u12, u13, u20, u21, u22, u23, u30, u31, u32, u33,
+                                i00j00, i00j01, i00j10, i00j11, i01j00, i01j01, i01j10, i01j11, i10j00, i10j01, i10j10, i10j11, i11j00, i11j01, i11j10, i11j11);
+                        }
+                        else if (a && !b) {
+                            apply_urho_i_u44(u00, u01, u02, u03, u10, u11, u12, u13, u20, u21, u22, u23, u30, u31, u32, u33,
+                                i00j00, i00j01, i00j10, i00j11, i01j00, i01j01, i01j10, i01j11, i10j00, i10j01, i10j10, i10j11, i11j00, i11j01, i11j10, i11j11);
+                        }
                     }
                 }
-            }
+            });
         }
 
         void apply_irho_udag_u44(const complex_t& U00, const complex_t& U01, const complex_t& U02, const complex_t& U03, 
@@ -274,47 +281,49 @@ namespace density_operator_simulator_impl {
             const size_t mask1 = pow2(qn1);
             const size_t mask2 = pow2(qn2);
 
-            for (size_t i = 0; i < N; ++i) {
-                // 提前过滤条件：控制位 + 目标量子比特为 0
-                if ((i & (mask1 | mask2)) != 0) continue;
+            parallel_for(0, N, N, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i) {
+                    // 提前过滤条件：控制位 + 目标量子比特为 0
+                    if ((i & (mask1 | mask2)) != 0) continue;
 
-                for (size_t j = 0; j < N; ++j) {
-                    if ((j & (mask1 | mask2)) != 0) continue;
+                    for (size_t j = 0; j < N; ++j) {
+                        if ((j & (mask1 | mask2)) != 0) continue;
 
-                    // 提取子矩阵引用
-                    complex_t& i00j00 = val(state, i, j, N);
-                    complex_t& i01j00 = val(state, i + mask1, j, N);
-                    complex_t& i10j00 = val(state, i + mask2, j, N);
-                    complex_t& i11j00 = val(state, i + mask1 + mask2, j, N);
+                        // 提取子矩阵引用
+                        complex_t& i00j00 = val(state, i, j, N);
+                        complex_t& i01j00 = val(state, i + mask1, j, N);
+                        complex_t& i10j00 = val(state, i + mask2, j, N);
+                        complex_t& i11j00 = val(state, i + mask1 + mask2, j, N);
 
-                    complex_t& i00j01 = val(state, i, j + mask1, N);
-                    complex_t& i01j01 = val(state, i + mask1, j + mask1, N);
-                    complex_t& i10j01 = val(state, i + mask2, j + mask1, N);
-                    complex_t& i11j01 = val(state, i + mask1 + mask2, j + mask1, N);
+                        complex_t& i00j01 = val(state, i, j + mask1, N);
+                        complex_t& i01j01 = val(state, i + mask1, j + mask1, N);
+                        complex_t& i10j01 = val(state, i + mask2, j + mask1, N);
+                        complex_t& i11j01 = val(state, i + mask1 + mask2, j + mask1, N);
 
-                    complex_t& i00j10 = val(state, i, j + mask2, N);
-                    complex_t& i01j10 = val(state, i + mask1, j + mask2, N);
-                    complex_t& i10j10 = val(state, i + mask2, j + mask2, N);
-                    complex_t& i11j10 = val(state, i + mask1 + mask2, j + mask2, N);
+                        complex_t& i00j10 = val(state, i, j + mask2, N);
+                        complex_t& i01j10 = val(state, i + mask1, j + mask2, N);
+                        complex_t& i10j10 = val(state, i + mask2, j + mask2, N);
+                        complex_t& i11j10 = val(state, i + mask1 + mask2, j + mask2, N);
 
-                    complex_t& i00j11 = val(state, i, j + mask1 + mask2, N);
-                    complex_t& i01j11 = val(state, i + mask1, j + mask1 + mask2, N);
-                    complex_t& i10j11 = val(state, i + mask2, j + mask1 + mask2, N);
-                    complex_t& i11j11 = val(state, i + mask1 + mask2, j + mask1 + mask2, N);
+                        complex_t& i00j11 = val(state, i, j + mask1 + mask2, N);
+                        complex_t& i01j11 = val(state, i + mask1, j + mask1 + mask2, N);
+                        complex_t& i10j11 = val(state, i + mask2, j + mask1 + mask2, N);
+                        complex_t& i11j11 = val(state, i + mask1 + mask2, j + mask1 + mask2, N);
 
-                    // evolve_u44 
-                    evolve_u44(u00, u01, u02, u03,
-                        u10, u11, u12, u13,
-                        u20, u21, u22, u23,
-                        u30, u31, u32, u33,
-                        i00j00, i00j01, i00j10, i00j11,
-                        i01j00, i01j01, i01j10, i01j11,
-                        i10j00, i10j01, i10j10, i10j11,
-                        i11j00, i11j01, i11j10, i11j11
-                    );
-                   
+                        // evolve_u44
+                        evolve_u44(u00, u01, u02, u03,
+                            u10, u11, u12, u13,
+                            u20, u21, u22, u23,
+                            u30, u31, u32, u33,
+                            i00j00, i00j01, i00j10, i00j11,
+                            i01j00, i01j01, i01j10, i01j11,
+                            i10j00, i10j01, i10j10, i10j11,
+                            i11j00, i11j01, i11j10, i11j11
+                        );
+
+                    }
                 }
-            }
+            });
         }
 
         void u44_unsafe_impl(std::vector<std::complex<double>>& state, size_t qn1, size_t qn2, u44_t unitary, size_t total_qubit, size_t controller_mask)
@@ -745,10 +754,13 @@ namespace density_operator_simulator_impl {
 
         void merge_state(std::vector<complex_t>& target_state, const std::vector<complex_t>& add_state, double coef)
         {
-            for (size_t i = 0; i < target_state.size(); ++i)
-            {
-                target_state[i] += add_state[i] * coef;
-            }
+            const size_t n_state = target_state.size();
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
+                {
+                    target_state[i] += add_state[i] * coef;
+                }
+            });
         }
 
         void kraus1q_unsafe_impl(std::vector<complex_t>& state, size_t qn, const Kraus1Q& kraus1q, size_t total_qubit)

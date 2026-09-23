@@ -1,36 +1,43 @@
 #include "simulator_statevector_impl.h"
+#include "threading.h"
 
 namespace uniqc {
 namespace statevector_simulator_impl {
         void hadamard_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-                if ((i >> qn) & 1)
-                    continue;
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
+                {
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+                    if ((i >> qn) & 1)
+                        continue;
 
-                size_t i0 = i;
-                size_t i1 = i + pow2(qn);
+                    size_t i0 = i;
+                    size_t i1 = i + pow2(qn);
 
-                sv_apply_u22(INVSQRT2, INVSQRT2, INVSQRT2, -INVSQRT2, state[i0], state[i1]);
-            }
+                    sv_apply_u22(INVSQRT2, INVSQRT2, INVSQRT2, -INVSQRT2, state[i0], state[i1]);
+                }
+            });
         }
         void u22_unsafe_impl(std::vector<std::complex<double>>& state, size_t qn, complex_t u00, complex_t u01, complex_t u10, complex_t u11, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-                if ((i >> qn) & 1)
-                    continue;
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
+                {
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+                    if ((i >> qn) & 1)
+                        continue;
 
-                size_t i0 = i;
-                size_t i1 = i + pow2(qn);
+                    size_t i0 = i;
+                    size_t i1 = i + pow2(qn);
 
-                sv_apply_u22(u00, u01, u10, u11, state[i0], state[i1]);
-            }
+                    sv_apply_u22(u00, u01, u10, u11, state[i0], state[i1]);
+                }
+            });
         }
         void u22_unsafe_impl(std::vector<std::complex<double>>& state, size_t qn, u22_t unitary, size_t total_qubit, size_t controller_mask)
         {
@@ -64,158 +71,188 @@ namespace statevector_simulator_impl {
         }
         void x_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    std::swap(state[i], state[i - pow2(qn)]);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        std::swap(state[i], state[i - pow2(qn)]);
+                    }
                 }
-            }
+            });
         }
         void y_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
             using namespace std::literals::complex_literals;
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    std::swap(state[i], state[i - pow2(qn)]);
-                    state[i - pow2(qn)] *= -1i;
-                    state[i] *= 1i;
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        std::swap(state[i], state[i - pow2(qn)]);
+                        state[i - pow2(qn)] *= -1i;
+                        state[i] *= 1i;
+                    }
                 }
-            }
+            });
         }
         void z_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= -1;
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        state[i] *= -1;
+                    }
                 }
-            }
+            });
         }
         void s_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
             using namespace std::literals::complex_literals;
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= 1i;
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        state[i] *= 1i;
+                    }
                 }
-            }
+            });
         }
         void sdg_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
             using namespace std::literals::complex_literals;
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= -1i;
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        state[i] *= -1i;
+                    }
                 }
-            }
+            });
         }
         void t_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
             using namespace std::literals::complex_literals;
 
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= complex_t(INVSQRT2, INVSQRT2);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        state[i] *= complex_t(INVSQRT2, INVSQRT2);
+                    }
                 }
-            }
+            });
         }
         void tdg_unsafe_impl(std::vector<complex_t>& state, size_t qn, size_t total_qubit, size_t controller_mask)
         {
             using namespace std::literals::complex_literals;
 
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= complex_t(INVSQRT2, -INVSQRT2);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        state[i] *= complex_t(INVSQRT2, -INVSQRT2);
+                    }
                 }
-            }
+            });
         }
         void cz_unsafe_impl(std::vector<complex_t>& state, size_t qn1, size_t qn2, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if (((i >> qn1) & 1) && ((i >> qn2) & 1))
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= -1;
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if (((i >> qn1) & 1) && ((i >> qn2) & 1))
+                    {
+                        state[i] *= -1;
+                    }
                 }
-            }
+            });
         }
         void swap_unsafe_impl(std::vector<complex_t>& state, size_t qn1, size_t qn2, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                bool v1 = (i >> qn1) & 1;
-                bool v2 = (i >> qn2) & 1;
-                if (v1 && (!v2))
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    // |10>
-                    // let it swap with |01>
-                    std::swap(state[i - pow2(qn1) + pow2(qn2)], state[i]);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    bool v1 = (i >> qn1) & 1;
+                    bool v2 = (i >> qn2) & 1;
+                    if (v1 && (!v2))
+                    {
+                        // |10>
+                        // let it swap with |01>
+                        std::swap(state[i - pow2(qn1) + pow2(qn2)], state[i]);
+                    }
                 }
-            }
+            });
         }
         void iswap_unsafe_impl(std::vector<complex_t>& state, size_t qn1, size_t qn2, size_t total_qubit, size_t controller_mask, bool is_dagger)
         {
             using namespace std::literals::complex_literals;
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                // |01>
-                if (((i >> qn1) & 1) == 0 && ((i >> qn2) & 1) == 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    std::swap(state[i], state[i + pow2(qn1) - pow2(qn2)]);
-                    if (is_dagger)
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    // |01>
+                    if (((i >> qn1) & 1) == 0 && ((i >> qn2) & 1) == 1)
                     {
-                        state[i] *= -1i;
-                        state[i + pow2(qn1) - pow2(qn2)] *= -1i;
-                    }
-                    else
-                    {
-                        state[i] *= 1i;
-                        state[i + pow2(qn1) - pow2(qn2)] *= 1i;
+                        std::swap(state[i], state[i + pow2(qn1) - pow2(qn2)]);
+                        if (is_dagger)
+                        {
+                            state[i] *= -1i;
+                            state[i + pow2(qn1) - pow2(qn2)] *= -1i;
+                        }
+                        else
+                        {
+                            state[i] *= 1i;
+                            state[i + pow2(qn1) - pow2(qn2)] *= 1i;
+                        }
                     }
                 }
-            }
+            });
         }
 
         /* H = 1/2 * (XX+YY)
@@ -232,109 +269,127 @@ namespace statevector_simulator_impl {
             complex_t cos_t = std::cos(theta / 2);
             complex_t sin_t = (is_dagger ? -complex_t(0, 1) : complex_t(0, 1)) * std::sin(theta / 2);
 
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                // |01>
-                if (((i >> qn1) & 1) == 0 && ((i >> qn2) & 1) == 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    size_t i2 = i + pow2(qn1) - pow2(qn2);
-                    complex_t s1 = state[i];
-                    complex_t s2 = state[i2];
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
 
-                    state[i] = s1 * cos_t + s2 * sin_t;
-                    state[i2] = s1 * sin_t + s2 * cos_t;
+                    // |01>
+                    if (((i >> qn1) & 1) == 0 && ((i >> qn2) & 1) == 1)
+                    {
+                        size_t i2 = i + pow2(qn1) - pow2(qn2);
+                        complex_t s1 = state[i];
+                        complex_t s2 = state[i2];
+
+                        state[i] = s1 * cos_t + s2 * sin_t;
+                        state[i2] = s1 * sin_t + s2 * cos_t;
+                    }
                 }
-            }
+            });
         }
         void cnot_unsafe_impl(std::vector<complex_t>& state, size_t controller, size_t target, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if (((i >> controller) & 1) && ((i >> target) & 1))
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    std::swap(state[i], state[i - pow2(target)]);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if (((i >> controller) & 1) && ((i >> target) & 1))
+                    {
+                        std::swap(state[i], state[i - pow2(target)]);
+                    }
                 }
-            }
+            });
         }
 
         void rz_unsafe_impl(std::vector<complex_t>& state, size_t qn, double theta, size_t total_qubit, size_t controller_mask, bool is_dagger)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
+                {
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
 
-                if (((i >> qn) & 1) ^ is_dagger)
-                {
-                    // 0 and not dagger -> exp(-it/2)
-                    // 1 and dagger -> exp(-it/2)
-                    state[i] *= std::complex(cos(theta / 2), sin(theta / 2));
+                    if (((i >> qn) & 1) ^ is_dagger)
+                    {
+                        // 0 and not dagger -> exp(-it/2)
+                        // 1 and dagger -> exp(-it/2)
+                        state[i] *= std::complex(cos(theta / 2), sin(theta / 2));
+                    }
+                    else
+                    {
+                        // 0 and dagger -> exp(it/2)
+                        // 1 and not dagger -> exp(it/2)
+                        state[i] *= std::complex(cos(theta / 2), -sin(theta / 2));
+                    }
                 }
-                else
-                {
-                    // 0 and dagger -> exp(it/2)
-                    // 1 and not dagger -> exp(it/2)
-                    state[i] *= std::complex(cos(theta / 2), -sin(theta / 2));
-                }
-            }
+            });
         }
 
         void u1_unsafe_impl(std::vector<complex_t>& state, size_t qn, double theta, size_t total_qubit, size_t controller_mask, bool is_dagger)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if ((i >> qn) & 1)
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    if (is_dagger)
-                        state[i] *= std::complex(cos(theta), -sin(theta));
-                    else
-                        state[i] *= std::complex(cos(theta), sin(theta));
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if ((i >> qn) & 1)
+                    {
+                        if (is_dagger)
+                            state[i] *= std::complex(cos(theta), -sin(theta));
+                        else
+                            state[i] *= std::complex(cos(theta), sin(theta));
+                    }
                 }
-            }
+            });
         }
 
         void toffoli_unsafe_impl(std::vector<complex_t>& state, size_t qn1, size_t qn2, size_t target, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if (((i >> qn1) & 1) && ((i >> qn2) & 1) && ((i >> target) & 1))
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    std::swap(state[i], state[i - pow2(target)]);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if (((i >> qn1) & 1) && ((i >> qn2) & 1) && ((i >> target) & 1))
+                    {
+                        std::swap(state[i], state[i - pow2(target)]);
+                    }
                 }
-            }
+            });
         }
 
         void cswap_unsafe_impl(std::vector<complex_t>& state, size_t controller, size_t target1, size_t target2, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-
-                if (!((i >> controller) & 1))
-                    continue;
-
-                bool v1 = (i >> target1) & 1;
-                bool v2 = (i >> target2) & 1;
-                if (v1 && (!v2))
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    // |10>
-                    // let it swap with |01>
-                    std::swap(state[i - pow2(target1) + pow2(target2)], state[i]);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+
+                    if (!((i >> controller) & 1))
+                        continue;
+
+                    bool v1 = (i >> target1) & 1;
+                    bool v2 = (i >> target2) & 1;
+                    if (v1 && (!v2))
+                    {
+                        // |10>
+                        // let it swap with |01>
+                        std::swap(state[i - pow2(target1) + pow2(target2)], state[i]);
+                    }
                 }
-            }
+            });
         }
 
         /* ZZ interaction
@@ -346,21 +401,24 @@ namespace statevector_simulator_impl {
         */
         void zz_unsafe_impl(std::vector<complex_t>& state, size_t qn1, size_t qn2, double theta, size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-                bool v1 = (i >> qn1) & 1;
-                bool v2 = (i >> qn2) & 1;
-                if (v1 == v2) /* 00 or 11 */
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    state[i] *= complex_t(cos(theta / 2), sin(-theta / 2));
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+                    bool v1 = (i >> qn1) & 1;
+                    bool v2 = (i >> qn2) & 1;
+                    if (v1 == v2) /* 00 or 11 */
+                    {
+                        state[i] *= complex_t(cos(theta / 2), sin(-theta / 2));
+                    }
+                    else /* 01 or 10 */
+                    {
+                        state[i] *= complex_t(cos(theta / 2), sin(theta / 2));
+                    }
                 }
-                else /* 01 or 10 */
-                {
-                    state[i] *= complex_t(cos(theta / 2), sin(theta / 2));
-                }
-            }
+            });
         }
 
         /* XX interaction
@@ -381,31 +439,34 @@ namespace statevector_simulator_impl {
             complex_t stheta = sin(theta);
             complex_t istheta = 1i * stheta;
 
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-                bool v1 = (i >> qn1) & 1;
-                bool v2 = (i >> qn2) & 1;
-                if (v1 == false && v2 == false) /* 00 */
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    /* only 00 will be operated */
-                    size_t i00 = i;
-                    size_t i01 = i + pow2(qn1);
-                    size_t i10 = i + pow2(qn2);
-                    size_t i11 = i + pow2(qn1) + pow2(qn2);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+                    bool v1 = (i >> qn1) & 1;
+                    bool v2 = (i >> qn2) & 1;
+                    if (v1 == false && v2 == false) /* 00 */
+                    {
+                        /* only 00 will be operated */
+                        size_t i00 = i;
+                        size_t i01 = i + pow2(qn1);
+                        size_t i10 = i + pow2(qn2);
+                        size_t i11 = i + pow2(qn1) + pow2(qn2);
 
-                    complex_t a00 = state[i00];
-                    complex_t a01 = state[i01];
-                    complex_t a10 = state[i10];
-                    complex_t a11 = state[i11];
+                        complex_t a00 = state[i00];
+                        complex_t a01 = state[i01];
+                        complex_t a10 = state[i10];
+                        complex_t a11 = state[i11];
 
-                    state[i00] = a00 * ctheta + a11 * istheta;
-                    state[i01] = a01 * ctheta + a10 * istheta;
-                    state[i10] = a01 * istheta + a10 * ctheta;
-                    state[i11] = a00 * istheta + a11 * ctheta;
+                        state[i00] = a00 * ctheta + a11 * istheta;
+                        state[i01] = a01 * ctheta + a10 * istheta;
+                        state[i10] = a01 * istheta + a10 * ctheta;
+                        state[i11] = a00 * istheta + a11 * ctheta;
+                    }
                 }
-            }
+            });
         }
 
         /* YY interaction
@@ -427,31 +488,34 @@ namespace statevector_simulator_impl {
             complex_t stheta = sin(theta);
             complex_t istheta = 1i * stheta;
 
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
-                bool v1 = (i >> qn1) & 1;
-                bool v2 = (i >> qn2) & 1;
-                if (v1 == false && v2 == false) /* 00 */
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
                 {
-                    /* only 00 will be operated */
-                    size_t i00 = i;
-                    size_t i01 = i + pow2(qn1);
-                    size_t i10 = i + pow2(qn2);
-                    size_t i11 = i + pow2(qn1) + pow2(qn2);
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
+                    bool v1 = (i >> qn1) & 1;
+                    bool v2 = (i >> qn2) & 1;
+                    if (v1 == false && v2 == false) /* 00 */
+                    {
+                        /* only 00 will be operated */
+                        size_t i00 = i;
+                        size_t i01 = i + pow2(qn1);
+                        size_t i10 = i + pow2(qn2);
+                        size_t i11 = i + pow2(qn1) + pow2(qn2);
 
-                    complex_t a00 = state[i00];
-                    complex_t a01 = state[i01];
-                    complex_t a10 = state[i10];
-                    complex_t a11 = state[i11];
+                        complex_t a00 = state[i00];
+                        complex_t a01 = state[i01];
+                        complex_t a10 = state[i10];
+                        complex_t a11 = state[i11];
 
-                    state[i00] = a00 * ctheta - a11 * istheta;
-                    state[i01] = a01 * ctheta + a10 * istheta;
-                    state[i10] = a01 * istheta + a10 * ctheta;
-                    state[i11] = -a00 * istheta + a11 * ctheta;
+                        state[i00] = a00 * ctheta - a11 * istheta;
+                        state[i01] = a01 * ctheta + a10 * istheta;
+                        state[i10] = a01 * istheta + a10 * ctheta;
+                        state[i11] = -a00 * istheta + a11 * ctheta;
+                    }
                 }
-            }
+            });
         }
 
         /* diag(1, exp(i theta1), exp(i theta2),
@@ -459,19 +523,22 @@ namespace statevector_simulator_impl {
         void phase2q_unsafe_impl(std::vector<complex_t>& state, size_t qn1, size_t qn2, double theta1, double theta2, double thetazz,
             size_t total_qubit, size_t controller_mask)
         {
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                if ((i & controller_mask) != controller_mask)
-                    continue;
+            const size_t n_state = pow2(total_qubit);
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i)
+                {
+                    if ((i & controller_mask) != controller_mask)
+                        continue;
 
-                const bool bit1 = (i >> qn1) & 1;
-                const bool bit2 = (i >> qn2) & 1;
-                const double angle =
-                    (bit1 ? theta1 : 0.0) +
-                    (bit2 ? theta2 : 0.0) +
-                    (bit1 && bit2 ? thetazz : 0.0);
-                state[i] *= std::exp(complex_t(0, angle));
-            }
+                    const bool bit1 = (i >> qn1) & 1;
+                    const bool bit2 = (i >> qn2) & 1;
+                    const double angle =
+                        (bit1 ? theta1 : 0.0) +
+                        (bit2 ? theta2 : 0.0) +
+                        (bit1 && bit2 ? thetazz : 0.0);
+                    state[i] *= std::exp(complex_t(0, angle));
+                }
+            });
         }
 
         /* uu15 gate using KAK decomposition
@@ -576,26 +643,38 @@ namespace statevector_simulator_impl {
         dtype prob_0(const std::vector<complex_t>& state, size_t qn, size_t total_qubit)
         {
             const size_t mask = pow2(qn); // 确定目标量子比特的掩码
-            const size_t N = pow2(total_qubit);
-            double p0 = 0.0;
-            for (size_t i = 0; i < N; ++i) {
-                if (!(i & mask)) {
-                    p0 += abs_sqr(state[i]);
+            const size_t n_state = pow2(total_qubit);
+            std::vector<double> partial(parallel_worker_count(n_state), 0.0);
+            parallel_chunks(0, n_state, [&](size_t c, size_t b, size_t e) {
+                double local = 0.0;
+                for (size_t i = b; i < e; ++i) {
+                    if (!(i & mask)) {
+                        local += abs_sqr(state[i]);
+                    }
                 }
-            }
+                partial[c] = local;
+            });
+            double p0 = 0.0;
+            for (double v : partial) p0 += v;
             return p0;
         }
 
         dtype prob_1(const std::vector<complex_t>& state, size_t qn, size_t total_qubit)
         {
             const size_t mask = pow2(qn); // 确定目标量子比特的掩码
-            const size_t N = pow2(total_qubit);
-            double p1 = 0.0;
-            for (size_t i = 0; i < N; ++i) {
-                if (i & mask) {
-                    p1 += abs_sqr(state[i]);
+            const size_t n_state = pow2(total_qubit);
+            std::vector<double> partial(parallel_worker_count(n_state), 0.0);
+            parallel_chunks(0, n_state, [&](size_t c, size_t b, size_t e) {
+                double local = 0.0;
+                for (size_t i = b; i < e; ++i) {
+                    if (i & mask) {
+                        local += abs_sqr(state[i]);
+                    }
                 }
-            }
+                partial[c] = local;
+            });
+            double p1 = 0.0;
+            for (double v : partial) p1 += v;
             return p1;
         }
 
@@ -604,9 +683,12 @@ namespace statevector_simulator_impl {
                 ThrowInvalidArgument(fmt::format("The normalization factor ({}) is invalid.", norm));
 
             const double inv_norm = 1.0 / norm;
-            for (auto& amp : state) {
-                amp *= inv_norm;
-            }
+            const size_t n_state = state.size();
+            parallel_for(0, n_state, [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i) {
+                    state[i] *= inv_norm;
+                }
+            });
         }
 
         void amplitude_damping_unsafe_impl(std::vector<complex_t>& state, size_t qn, double gamma, size_t total_qubit)
@@ -620,27 +702,31 @@ namespace statevector_simulator_impl {
             const double r = uniqc::rand();
 
             if (r < prob_E1) {
-                for (size_t i = 0; i < N; ++i) {
-                    // 仅处理目标量子比特为0的基态
-                    if ((i & mask) != 0)
-                        continue;
+                parallel_for(0, N, [&](size_t begin, size_t end) {
+                    for (size_t i = begin; i < end; ++i) {
+                        // 仅处理目标量子比特为0的基态
+                        if ((i & mask) != 0)
+                            continue;
 
-                    size_t i0 = i;
-                    size_t i1 = i + mask;
+                        size_t i0 = i;
+                        size_t i1 = i + mask;
 
-                    state[i0] = state[i1];
-                    state[i1] = 0;
-                }
+                        state[i0] = state[i1];
+                        state[i1] = 0;
+                    }
+                });
 
                 rescale_state(state, p1);
             }
             else {
                 // 应用E0操作：衰减|1⟩态幅度
-                for (size_t i = 0; i < N; ++i) {
-                    if (i & mask) {
-                        state[i] *= std::sqrt(1 - gamma);
+                parallel_for(0, N, [&](size_t begin, size_t end) {
+                    for (size_t i = begin; i < end; ++i) {
+                        if (i & mask) {
+                            state[i] *= std::sqrt(1 - gamma);
+                        }
                     }
-                }
+                });
 
                 // 归一化处理
                 const double norm = 1 - prob_E1;                
@@ -662,10 +748,17 @@ namespace statevector_simulator_impl {
                 u22_unsafe_impl(temp_state, qn, kraus[k], total_qubit, 0);
 
                 // 计算概率
+                const size_t n_temp = temp_state.size();
+                std::vector<double> partial(parallel_worker_count(n_temp), 0.0);
+                parallel_chunks(0, n_temp, [&](size_t c, size_t b, size_t e) {
+                    double local = 0.0;
+                    for (size_t i = b; i < e; ++i) {
+                        local += std::norm(temp_state[i]);
+                    }
+                    partial[c] = local;
+                });
                 double prob = 0.0;
-                for (const auto& amp : temp_state) {
-                    prob += std::norm(amp);
-                }
+                for (double v : partial) prob += v;
 
                 // 概率决策
                 if (r < cumulative_prob + prob) {
@@ -711,16 +804,23 @@ namespace statevector_simulator_impl {
                 mask_state |= (qstate == 1 ? pow2(qid) : 0);
             }
 
+            const size_t n_state = pow2(total_qubit);
+            std::vector<double> partial(parallel_worker_count(n_state), 0.0);
+            parallel_chunks(0, n_state, [&](size_t c, size_t b, size_t e) {
+                double local = 0.0;
+                for (size_t i = b; i < e; ++i)
+                {
+                    // Each basis state i contributes its amplitude-squared at
+                    // most once — the previous nested loop re-added abs_sqr(state[i])
+                    // once per entry in measure_map, inflating joint probabilities
+                    // by a factor of len(measure_map) whenever it matched.
+                    if ((i & mask_qubit) == mask_state)
+                        local += abs_sqr(state[i]);
+                }
+                partial[c] = local;
+            });
             double prob = 0;
-            for (size_t i = 0; i < pow2(total_qubit); ++i)
-            {
-                // Each basis state i contributes its amplitude-squared at
-                // most once — the previous nested loop re-added abs_sqr(state[i])
-                // once per entry in measure_map, inflating joint probabilities
-                // by a factor of len(measure_map) whenever it matched.
-                if ((i & mask_qubit) == mask_state)
-                    prob += abs_sqr(state[i]);
-            }
+            for (double v : partial) prob += v;
             return prob;
         }
 
