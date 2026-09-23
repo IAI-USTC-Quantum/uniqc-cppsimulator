@@ -64,7 +64,7 @@ PRESETS: dict[str, list[Group]] = {
         ),
         Group(
             name="sampling",
-            backends=("uniqc_sv", "aer_sv"),
+            backends=("uniqc_sv", "uniqc_sv_batch", "aer_sv"),
             circuits=("random",),
             qubits=(8,),
             depth=2,
@@ -121,7 +121,7 @@ PRESETS: dict[str, list[Group]] = {
         ),
         Group(
             name="sampling",
-            backends=("uniqc_sv", "aer_sv"),
+            backends=("uniqc_sv", "uniqc_sv_batch", "aer_sv"),
             circuits=("random",),
             qubits=(8, 16, 20),
             depth=2,

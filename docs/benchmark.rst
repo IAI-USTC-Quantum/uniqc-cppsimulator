@@ -53,12 +53,13 @@ CLI 子命令： ``list`` / ``selftest`` / ``run`` / ``plot`` / ``report``。
 各后端拿到 ``threads`` 参数的方式（``BenchmarkBackend.threads_mode``）：
 
 - ``option`` —— 后端原生线程选项（Aer ``max_parallel_threads``、qsim
-  ``cpu_threads``、qibo ``set_threads``）；
+  ``cpu_threads``、qibo ``set_threads``、uniqc ``set_num_threads`` +
+  ``set_parallel_enabled``，内核门级并行）；
 - ``env`` —— 由 runner 在 worker 子进程 import 前通过 ``OMP_NUM_THREADS``
   等环境变量固定（qulacs、lightning、quimb、cirq、qutip、braket）；
-- ``batch`` —— **uniqc 专属**：C++ 内核单线程、绑定不释放 GIL，"多线程"=
-  进程池并行跑独立轨迹 shots，测采样吞吐（等价 shot-parallelism）；
-- ``none`` —— 单线程内核无旋钮（uniqc 密度矩阵）。
+- ``batch`` —— **uniqc_sv_batch 专属**：轨迹在单线程内核上由进程池并行跑
+  独立 shots，测采样吞吐（等价 shot-parallelism）；
+- ``none`` —— 单线程内核无旋钮。
 
 .. note::
    ``batch`` 与 ``option``/``env`` 的并行机制不同（任务级 vs 门级并行），

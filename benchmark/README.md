@@ -43,10 +43,10 @@ uv pip install --python .venv-bench/bin/python uniqc-cppsimulator \
 
 各后端拿到 `threads` 参数的方式（`BenchmarkBackend.threads_mode`）：
 
-- `option` — 后端原生线程选项：Aer `max_parallel_threads`、qsim `QSimOptions(cpu_threads)`、qibo `set_threads`
+- `option` — 后端原生线程选项：Aer `max_parallel_threads`、qsim `QSimOptions(cpu_threads)`、qibo `set_threads`、uniqc `set_num_threads` + `set_parallel_enabled`（内核门级并行）
 - `env` — 线程数由 runner 在 worker 子进程 import 前通过 `OMP_NUM_THREADS` 等固定：qulacs、lightning、quimb、cirq、qutip、braket
-- `batch` — **uniqc 专属**：C++ 内核单线程、绑定不释放 GIL，"多线程"= `ProcessPoolExecutor` 并行跑独立轨迹 shots，测**采样吞吐**（等价于 shot-parallelism）
-- `none` — 单线程内核无旋钮（uniqc 密度矩阵）
+- `batch` — **uniqc_sv_batch 专属**：轨迹在单线程内核上由 `ProcessPoolExecutor` 并行跑独立 shots，测**采样吞吐**（等价于 shot-parallelism）
+- `none` — 单线程内核无旋钮
 
 > 注意：`batch` 与 `option`/`env` 的并行机制不同（任务级并行 vs 门级并行），
 > 两者数字不可直接互比——这正是图表分开展示的原因。

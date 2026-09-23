@@ -1,10 +1,14 @@
-"""uniqc_cpp StatevectorSimulator adapter.
+"""uniqc_cpp StatevectorSimulator adapters.
 
-The C++ kernel is single-threaded per simulation and the pybind11 bindings
-hold the GIL, so ``threads_mode == "batch"``: the multi-thread baseline runs
-independent trajectory shots in parallel worker processes (multiprocessing)
-and measures sampling throughput.  Noise channels are stochastic on the
-statevector (quantum-trajectory Monte Carlo), one trajectory per shot.
+``UniqcStatevector`` is an ``option``-mode backend: the threads tier is
+applied via the simulator's global multithreading API
+(``uniqc_cpp.set_num_threads`` + ``set_parallel_enabled``), so exact
+probabilities and trajectory shots both run in a single process with a
+parallel gate kernel.  ``UniqcStatevectorBatch`` keeps the historical
+``batch`` baseline: trajectories run single-threaded in parallel worker
+processes (multiprocessing) and measure sampling throughput.  Noise
+channels are stochastic on the statevector (quantum-trajectory Monte
+Carlo), one trajectory per shot.
 """
 
 from __future__ import annotations
@@ -63,6 +67,16 @@ def _apply_ops(sim, ops) -> None:
             raise ValueError(f"unmapped op {name}")
 
 
+def _exact_p_q0_1(circuit: Circuit) -> float:
+    """Exact P(q0=1) from one statevector simulation."""
+    sim = uniqc_cpp.StatevectorSimulator()
+    sim.init_n_qubit(circuit.n_qubits)
+    _apply_ops(sim, circuit.ops)
+    if circuit.n_qubits <= 22:  # avoid copying >4M-amplitude vectors
+        return prob_q0_1_from_statevector(sim.state)
+    return sim.pmeasure(0)[1]
+
+
 def _trajectory_shots(payload: tuple) -> int:
     """Worker: run ``n_shots`` stochastic trajectories, return # of 1-outcomes."""
     ops, n_qubits, n_shots, seed = payload
@@ -85,6 +99,32 @@ class UniqcStatevector(BenchmarkBackend):
     label = "uniqc_cpp StatevectorSimulator"
     import_name = "uniqc_cpp"
     kind = "statevector"
+    threads_mode = "option"
+    max_qubits = 30
+    supports_channels = True
+    supports_shots = True
+    homepage = "https://github.com/IAI-USTC-Quantum/uniqc-cppsimulator"
+
+    def set_threads(self, n: int) -> None:
+        """Apply the threads tier to the simulator's global kernel threads."""
+        uniqc_cpp.set_num_threads(n)
+        uniqc_cpp.set_parallel_enabled(n > 1)
+
+    def run(self, circuit: Circuit, shots: int, seed: int) -> dict:
+        if shots == 0:
+            return {"p_q0_1": _exact_p_q0_1(circuit)}
+
+        # one process, kernel-parallel gates inside each trajectory
+        ones = _trajectory_shots((circuit.ops, circuit.n_qubits, shots, seed))
+        return {"p_q0_1": ones / shots}
+
+
+@register_backend
+class UniqcStatevectorBatch(BenchmarkBackend):
+    name = "uniqc_sv_batch"
+    label = "uniqc_cpp StatevectorSimulator (process-batch shots)"
+    import_name = "uniqc_cpp"
+    kind = "statevector"
     threads_mode = "batch"
     max_qubits = 30
     supports_channels = True
@@ -92,26 +132,20 @@ class UniqcStatevector(BenchmarkBackend):
     homepage = "https://github.com/IAI-USTC-Quantum/uniqc-cppsimulator"
 
     def run(self, circuit: Circuit, shots: int, seed: int) -> dict:
-        ops = circuit.ops
         if shots == 0:
-            sim = uniqc_cpp.StatevectorSimulator()
-            sim.init_n_qubit(circuit.n_qubits)
-            _apply_ops(sim, ops)
-            if circuit.n_qubits <= 22:  # avoid copying >4M-amplitude vectors
-                p = prob_q0_1_from_statevector(sim.state)
-            else:
-                p = sim.pmeasure(0)[1]
-            return {"p_q0_1": p}
+            # batch mode only parallelizes shot sampling; exact runs stay
+            # single-threaded (multi-thread tiers are skipped via supports())
+            return {"p_q0_1": _exact_p_q0_1(circuit)}
 
         workers = max(1, self.threads)
         per = shots // workers
         if workers == 1 or per == 0:
-            ones = _trajectory_shots((ops, circuit.n_qubits, shots, seed))
+            ones = _trajectory_shots((circuit.ops, circuit.n_qubits, shots, seed))
             return {"p_q0_1": ones / shots}
 
         base = (seed * 1000003 + 7919) & 0xFFFFFFFF  # C++ seed() takes 32-bit
         payloads = [
-            (ops, circuit.n_qubits, per, (base + i * 104729) & 0xFFFFFFFF)
+            (circuit.ops, circuit.n_qubits, per, (base + i * 104729) & 0xFFFFFFFF)
             for i in range(workers)
         ]
         remainder = shots - per * workers
@@ -119,5 +153,7 @@ class UniqcStatevector(BenchmarkBackend):
         with ctx as pool:
             ones = sum(pool.map(_trajectory_shots, payloads))
         if remainder:  # pragma: no cover - matrix uses divisible shot counts
-            ones += _trajectory_shots((ops, circuit.n_qubits, remainder, (base + workers) & 0xFFFFFFFF))
+            ones += _trajectory_shots(
+                (circuit.ops, circuit.n_qubits, remainder,
+                 (base + workers) & 0xFFFFFFFF))
         return {"p_q0_1": ones / shots}

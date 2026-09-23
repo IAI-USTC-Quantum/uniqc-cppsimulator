@@ -116,13 +116,13 @@ def write_report(data: dict, doc_dir: str) -> str:
     notes = [
         "## 注意事项",
         "",
-        f"- 本轮 uniqc_cpp 使用 PyPI 最新 release `{uniqc_version}`。",
+        f"- 本轮 uniqc_cpp 版本 `{uniqc_version}`。",
         (
-            "- **已知 release bug（源码已修复，待发版）**：`StatevectorSimulator.measure_single_shot(int)` 标量重载会无限递归死循环"
-            "（`{ qubit }` 花括号初始化在重载决议中选中标量重载自身，尾递归被优化为循环；本轮测量的 1.0.1 release 仍受影响）。"
-            "list 重载正常，采样适配器统一使用 `measure_single_shot([0])` 规避。"
+            "- **历史 release bug（源码已修复）**：`StatevectorSimulator.measure_single_shot(int)` 标量重载在 1.0.1 及更早 release 中会无限递归死循环"
+            "（`{ qubit }` 花括号初始化在重载决议中选中标量重载自身，尾递归被优化为循环）。"
+            "list 重载不受影响，采样适配器统一使用 `measure_single_shot([0])` 规避。"
         ),
-        "- 线程维度机制不同：外部模拟器为内核内门级并行（OMP/选项），uniqc_sv 为**进程池 shot 级并行**（采样吞吐），二者数值不可直接互比。",
+        "- 线程维度机制不同：外部模拟器与 uniqc_sv 均为内核内门级并行（OMP/选项/`set_num_threads`）；uniqc_sv_batch 为**进程池 shot 级并行**（采样吞吐），与门级并行的数值不可直接互比。",
         "- 基准未做绑核/独占机器等公平性控制（共享开发机），结果反映相对趋势。",
     ]
     if dropped:
@@ -186,8 +186,9 @@ def write_readme_summary(data: dict, doc_path: str) -> str:
     """Compact summary tables included by the README benchmark section."""
     ok = _ok(data["results"])
     meta = data["meta"]
-    # uniqc_sv only has threads=1 data for ideal-sv (batch parallelism applies
-    # to shot sampling), so the headline table compares single-thread runs.
+    # headline table compares single-thread runs (uniqc_sv also has
+    # multi-thread data now — see the speedup figure — but the like-for-like
+    # cross-simulator table stays at threads=1).
     threads = 1
     lines = [
         (

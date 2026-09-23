@@ -10,11 +10,13 @@ Thread baselines
 - ``"env"``    the runner exports OMP/BLAS thread limits in the worker
                subprocess before import (qulacs, lightning, quimb, cirq, qutip).
 - ``"option"`` the backend takes a thread-count option at construction
-               (aer, qsimcirq, qibo).
-- ``"batch"``  the kernel is single-threaded, so "multi-thread" means running
-               independent trajectory shots in parallel worker processes and
-               measuring sampling *throughput* (uniqc statevector).
-- ``"none"``  the simulator is single-threaded with no knob (uniqc density).
+               (aer, qsimcirq, qibo, uniqc — kernel threads via the global
+               ``set_num_threads`` / ``set_parallel_enabled`` API).
+- ``"batch"``  the kernel runs single-threaded, so "multi-thread" means
+               running independent trajectory shots in parallel worker
+               processes and measuring sampling *throughput*
+               (uniqc statevector batch baseline).
+- ``"none"``  the simulator is single-threaded with no knob.
 
 Readout contract: ``run`` returns ``{"p_q0_1": float}`` — the probability of
 measuring qubit 0 in state 1 (exact for ``shots == 0``, empirical otherwise).

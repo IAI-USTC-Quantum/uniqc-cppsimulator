@@ -83,8 +83,9 @@ lightning、Qibo、quimb、QuTiP、Braket 本地模拟器；未安装的自动�
 - **基线**：单线程 vs 多线程（现阶段仅 CPU）
 - **线路族 × qubit 数**：`ghz` / `qft` / 分层随机 / `qaoa`，4 → 24 量子比特
 - **噪声**：去极化、幅度阻尼、比特翻转（密度矩阵）与轨迹采样
-- **多线程机制**：外部模拟器走内核线程旋钮（OMP/选项）；`uniqc_cpp` 内核为单线程且
-  绑定不释放 GIL，多线程基线为 **shot 级进程并行采样吞吐**
+- **多线程机制**：外部模拟器走内核线程旋钮（OMP/选项）；`uniqc_cpp` 内核自带
+  全局多线程开关（`set_num_threads` / `set_parallel_enabled`），threads 档位直接
+  测内核门级并行；`uniqc_sv_batch` 另保留 shot 级进程并行采样吞吐基线
 
 ```bash
 uv venv .venv-bench --python 3.12 && uv pip install --python .venv-bench/bin/python \
@@ -96,29 +97,37 @@ uv venv .venv-bench --python 3.12 && uv pip install --python .venv-bench/bin/pyt
 .venv-bench/bin/python -m benchmark plot && .venv-bench/bin/python -m benchmark report
 ```
 
-对比对象是 PyPI 上最新的 `uniqc-cppsimulator` release（未指定版本时自动取最新）。
+默认对比对象是 PyPI 上最新的 `uniqc-cppsimulator` release；本轮为验证内核多线程，
+从本地源码安装 dev 构建（`1.0.2.dev4`）。
 
-### 最近一轮结果（2026-09-20，Xeon Gold 5118 × 48 核，PyPI release `1.0.1`）
+### 最近一轮结果（2026-09-22，Xeon Gold 5118 × 48 核，本地 dev 构建 `1.0.2.dev4`）
 
 理想态矢量、单线程、各线路最大可比规模（完整数据见 [`doc/benchmark.md`](doc/benchmark.md)）：
 
 | 线路 | 最大可比 qubits | 最快 | uniqc_sv | 倍差 |
 |---|---|---|---|---|
-| ghz | 24 | Qiskit Aer (5.1 ms) | 1.66 s | ×328 |
-| qaoa | 24 | Google qsim (2.09 s) | 64.3 s | ×31 |
-| qft | 20 | Google qsim (214 ms) | 12.72 s | ×60 |
-| random | 24 | Google qsim (1.98 s) | 24.8 s | ×13 |
+| ghz | 24 | Qiskit Aer (4.9 ms) | 1.82 s | ×372 |
+| qaoa | 24 | Google qsim (3.21 s) | 69.7 s | ×22 |
+| qft | 20 | Google qsim (224 ms) | 13.3 s | ×59 |
+| random | 24 | Google qsim (3.15 s) | 27.3 s | ×9 |
 
-- 小规模（≤8q）ideal 模拟 uniqc_sv 在 80 个数据点中 60 个最快（其余为 Qulacs）；
-  大规模落后于多线程 C++ 内核（当前内核为单线程实现）。
-- 多线程基线：Aer/qsim/Qulacs 内核级并行在 24q 处约 2–8×；uniqc_sv shot 级进程并行
-  采样在 16q 处 **×6.9**（53.3 s → 7.7 s / 1024 shots）。
-- 噪声密度矩阵（去极化）：4q 处 uniqc_dm 最快（0.9 ms，比 Qulacs-DM 快 ~7×），
-  10q 处落后 Aer（13.9 s vs 1.7 s）。
-- 轨迹采样吞吐（1024 shots）：uniqc_sv 在 8q/16q 均高于 Aer（6.2k/19 shots/s vs 2.6k/12）。
+**内核多线程首次生效**（threads=8 档位，全局 `set_num_threads` 门级并行）：
 
-> 数字来自共享开发机、未做绑核等公平性控制，仅用于相对趋势；图表见
-> [doc/benchmark.md](doc/benchmark.md)，原始 JSON 见 `doc/benchmark/results-2026-09-20.json`。
+- 大规模加速 **×2.7–2.9**：ghz 24q 1.82 s → 0.67 s；random 24q 27.3 s → 10.2 s；
+  qaoa 24q 69.7 s → 24.2 s；20q 约 ×1.7–1.8。≤16q 受线程启动开销与访存带宽限制收益甚微。
+- threads=8 下 24q ghz：uniqc_sv（672 ms）已与 PennyLane lightning（655 ms）并肩，
+  仅次于 Aer 的线路专用优化（2.1 ms）。
+- 密度矩阵行循环同样并行：uniqc_dm 10q 去极化 **×1.7**（19.0 s → 11.0 s）。
+- 采样吞吐（1024 shots）：进程级并行仍是王道 —— uniqc_sv_batch 16q **×7.7**
+  （37.0 s → 4.8 s），8q 达 17.4k shots/s 超过 Aer 多线程（6.3k）；内核线程对
+  轨迹采样仅 ×1.1（每条轨迹规模小、且无跨轨迹并行），两种机制各司其职。
+- 小规模（≤8q）单线程：uniqc_sv 与 Qulacs 各拿下 8 个线路-规模组合中的 4 个。
+- 噪声密度矩阵（去极化）：4q 处 uniqc_dm 最快（1.7 ms，比 Qulacs-DM 快 ~2.5×），
+  10q 处落后 Aer（19.0 s vs 1.7 s）。
+
+> 数字来自共享开发机（本轮有其他用户进程占用约 21 核，多线程加速比被低估）、
+> 未做绑核等公平性控制，仅用于相对趋势；图表见
+> [doc/benchmark.md](doc/benchmark.md)，原始 JSON 见 `doc/benchmark/results-2026-09-22.json`。
 
 ## 版本与兼容
 
