@@ -13,13 +13,20 @@ from __future__ import annotations
 
 import argparse
 import json
-import resource
 import sys
 import time
 
+try:
+    import resource
+except ImportError:  # Windows: the stdlib module does not exist there
+    resource = None  # type: ignore[assignment]
 
-def _rss_mb() -> float:
+
+def _rss_mb() -> float | None:
+    """Peak RSS of this worker in MiB, or ``None`` where unavailable."""
     # ru_maxrss is KiB on Linux
+    if resource is None:
+        return None
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
 
 
@@ -163,7 +170,7 @@ def run_case(case: dict) -> None:
         "status": "ok",
         "run_ms": [round(t, 3) for t in times_ms],
         "p_q0_1": p_q0_1,
-        "rss_mb": round(_rss_mb(), 1),
+        "rss_mb": round(rss, 1) if (rss := _rss_mb()) is not None else None,
     })
 
 
