@@ -4,6 +4,8 @@ UnifiedQuantum 的 C++ 量子线路模拟内核，独立发版。
 
 *The native C++ simulation kernel of [UnifiedQuantum](https://github.com/IAI-USTC-Quantum/UnifiedQuantum), published as a standalone package.*
 
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://iai-ustc-quantum.github.io/uniqc-cppsimulator/)
+
 ## 定位
 
 本仓库提供两个高性能 C++ 模拟器，通过 pybind11 暴露为 **`uniqc_cpp`** Python 扩展模块：
@@ -65,14 +67,23 @@ cmake --build build-cpp --config Release
 
 ## 文档
 
-Sphinx 文档（安装/构建、基准套件使用、`benchmark` 包 API 参考、`uniqc_cpp` 扩展 API 参考）位于 [`docs/`](docs/)：
+在线文档（GitHub Pages）：**<https://iai-ustc-quantum.github.io/uniqc-cppsimulator/>** ——
+安装/构建指南、基准套件使用、`benchmark` 包与 `uniqc_cpp` 扩展的 API 参考、基准结果
+与 CHANGELOG；`main` 分支相关变更推送后自动构建发布。
+
+本地构建（源在 [`docs/`](docs/)；README / CHANGELOG / 基准报告等 markdown 由
+`docs/prepare.py` 在构建开始时自动拷入 `docs/includes/`）：
 
 ```bash
-uv pip install --python .venv-bench/bin/python sphinx
-.venv-bench/bin/python -m sphinx -b html docs docs/_build/html   # 或 cd docs && make html PYTHON=../.venv-bench/bin/python
+uv venv .venv-docs --python 3.12
+uv pip install --python .venv-docs -r docs/requirements.txt .
+.venv-docs/bin/python -m sphinx -b html docs docs/_build/html   # 或 cd docs && make html PYTHON=../.venv-docs/bin/python
 ```
 
-类型存根 `uniqc_cpp.pyi` 随 wheel 发布；基准结果文档见 [doc/benchmark.md](doc/benchmark.md)。
+类型存根 `uniqc_cpp.pyi` 随 wheel 发布；基准结果文档见 [doc/benchmark.md](doc/benchmark.md)，一页纸摘要见 [doc/benchmark/README_summary.md](doc/benchmark/README_summary.md)。
+
+在 UnifiedQuantum 框架中调用本内核（`submit_task` / `Simulator` 等入口）的用法，见
+[UnifiedQuantum 文档的本地模拟章节](https://github.com/IAI-USTC-Quantum/UnifiedQuantum/blob/main/docs/source/1_basic_usage/simulation.md)。
 
 ## 性能基准
 
@@ -132,7 +143,7 @@ uv venv .venv-bench --python 3.12 && uv pip install --python .venv-bench/bin/pyt
 ## 版本与兼容
 
 - 本包版本与 UnifiedQuantum 独立演进。UnifiedQuantum 在其 `pyproject.toml` 中以 `uniqc-cppsimulator>=x.y,<z` 声明兼容区间。
-- 破坏性 API 变更会提升 major 版本并在 CHANGELOG 中标注。
+- 破坏性 API 变更会提升 major 版本并在 [CHANGELOG](CHANGELOG.md) 中标注。
 
 ## 许可证
 

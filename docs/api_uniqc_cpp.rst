@@ -22,6 +22,14 @@ uniqc_cpp 扩展 API 参考
 - ``pmeasure``/``get_prob`` 等读出方法不改变量子态；``measure_qubit`` /
   ``measure_single_shot`` 会坍缩态。
 
+参见
+----
+
+- :doc:`usage` —— 安装方式与最小运行示例
+- :doc:`benchmark` —— 这两个内核与竞品的性能对比
+- :doc:`includes/changelog` —— 内核版本历史
+- 类型存根 `uniqc_cpp.pyi <https://github.com/IAI-USTC-Quantum/uniqc-cppsimulator/blob/main/uniqc_cpp.pyi>`_
+
 模块级函数
 ----------
 

@@ -1,7 +1,8 @@
 # Benchmark 详情
 
 本页由 `python -m benchmark report` 生成；方法论、矩阵定义与扩展方法见
-[benchmark/README.md](../benchmark/README.md)，摘要见[仓库 README](../README.md#性能基准)。
+[benchmark/README.md](../benchmark/README.md)，摘要见[仓库 README](../README.md#性能基准)
+和[一页纸摘要](benchmark/README_summary.md)。
 
 ## 运行环境
 

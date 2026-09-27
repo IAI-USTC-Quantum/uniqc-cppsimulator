@@ -15,11 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **`StatevectorSimulator::measure_single_shot` 标量重载死循环**：`measure_single_shot({ qubit })` 的花括号初始化列表在重载决议中选中了标量重载自身，完美尾递归被编译器优化为无限循环——表现为挂起而非崩溃，1.0.1 及此前所有发布版本均受影响（list 重载不受影响，故既有测试未暴露）。现改为显式 `std::vector{ qubit }` 转发（与 `pmeasure` 标量重载同一写法）。新增带子进程超时保护的回归测试（`tests/test_bindings.py`）：旧版本上该测试失败而非挂死套件。
+- **`benchmark.worker` 在 Windows 上不可导入**：顶层 `import resource`（Unix-only 标准库）改为带回退的守卫导入，无 `resource` 平台上峰值 RSS 记为 `null`；`python -m benchmark list` 等 CLI 与文档 autodoc 在 Windows 恢复可用。
 
 ### Added
 
 - **Sphinx 文档（`docs/`）**：使用/构建/测试指南、基准套件使用、`benchmark` 包 API 参考（autodoc）与 `uniqc_cpp` 扩展 API 参考；补全 `benchmark` 包全部 docstring。构建：`python -m sphinx -b html docs docs/_build/html`（零告警）。
-- **跨模拟器 CPU benchmark 套件（`benchmark/`）**：以 `uniqc_cpp` 为对象与主流 pip 可装 CPU 模拟器（Qiskit Aer、Cirq、qsim、Qulacs、PennyLane lightning、Qibo、quimb、QuTiP、Braket 本地模拟器等）对比；统一线路 IR + 注册表扩展点（线路族 / 噪声预设 / 后端适配器 / 矩阵预设 / 图表）；单线程 vs 多线程基线（外部模拟器走原生线程旋钮，`uniqc_cpp` 走进程池并行采样吞吐）；结果 JSON 落盘 + 图表 + 报告生成（`python -m benchmark run|plot|report`）。摘要见 README"性能基准"，详情见 `doc/benchmark.md`。
+- **文档发布到 GitHub Pages**：`.github/workflows/docs-pages.yml` 在 `main` 分支文档相关变更后自动构建部署（`-W` 零告警门禁）。README / CHANGELOG / `doc/benchmark.md` / `benchmark/README.md` 与基准图表由 `docs/prepare.py` 在构建开始时自动拷入站点并重写站内链接（myst-parser），主题换为 furo；站点地址 <https://iai-ustc-quantum.github.io/uniqc-cppsimulator/>。
+- **跨模拟器 CPU benchmark 套件（`benchmark/`）**：以 `uniqc_cpp` 为对象与主流 pip 可装 CPU 模拟器（Qiskit Aer、Cirq、qsim、Qulacs、PennyLane lightning、Qibo、quimb、QuTiP、Braket 本地模拟器等）对比；统一线路 IR + 注册表扩展点（线路族 / 噪声预设 / 后端适配器 / 矩阵预设 / 图表）；单线程 vs 多线程基线（外部模拟器走原生线程旋钮，`uniqc_cpp` 走进程池并行采样吞吐）；结果 JSON 落盘 + 图表 + 报告生成（`python -m benchmark run|plot|report`）。摘要见 [README"性能基准"](README.md#性能基准)，详情见 [doc/benchmark.md](doc/benchmark.md)，套件用法见 [benchmark/README.md](benchmark/README.md)。
 
 ## [1.0.1] - 2026-08-23
 

@@ -45,6 +45,8 @@ sdist 源码编译，需要满足下方"源码构建要求"。
 （含受控门）结果与单线程**逐位一致**；仅概率类读出（``pmeasure`` / ``get_prob``）
 因浮点求和顺序不同存在 ~1e-15 量级的差异。小规模态（< 2^14 幅度）自动回落单线程。
 
+想看这个内核在 UnifiedQuantum 框架里如何被调用，见 `UnifiedQuantum 文档的本地模拟章节 <https://github.com/IAI-USTC-Quantum/UnifiedQuantum/blob/main/docs/source/1_basic_usage/simulation.md>`_。
+
 源码构建要求
 ------------
 
@@ -82,11 +84,31 @@ sdist 源码编译，需要满足下方"源码构建要求"。
    cmake --build build-cpp --config Release
    ./build-cpp/bin/Release/UnifiedQuantumTest   # Windows: .\build-cpp\bin\Release\UnifiedQuantumTest.exe
 
+想评估性能或与其它模拟器对比，见 :doc:`benchmark` 与 :doc:`includes/benchmark-results`。
+
 文档构建
 --------
 
+文档源在 ``docs/``（本站），构建依赖见 ``docs/requirements.txt``；因为要
+autodoc 导入 ``uniqc_cpp`` 与 ``benchmark``，还需安装扩展本体：
+
 .. code-block:: bash
 
-   uv pip install --python .venv-bench/bin/python sphinx
-   .venv-bench/bin/python -m sphinx -b html docs docs/_build/html
-   # 或：cd docs && make html PYTHON=../.venv-bench/bin/python
+   uv venv .venv-docs --python 3.12
+   uv pip install --python .venv-docs -r docs/requirements.txt .
+   .venv-docs/bin/python -m sphinx -b html docs docs/_build/html
+   # Windows: .venv-docs\Scripts\python -m sphinx -b html docs docs\_build\html
+
+README / CHANGELOG / 基准报告等 markdown 由 ``docs/prepare.py`` 在构建开始时
+自动拷入 ``docs/includes/``（生成目录，不入库）；也可以单独运行
+``python docs/prepare.py``。推送到 ``main`` 后由 GitHub Actions 自动发布到
+GitHub Pages。
+
+相关页面
+--------
+
+- :doc:`index` —— 站点导航与项目定位
+- :doc:`benchmark` —— 基准测试套件的使用方法
+- :doc:`includes/benchmark-methodology` —— 测量方法学、线程模型与扩展指南
+- :doc:`includes/changelog` —— 版本历史（Keep a Changelog 格式）
+- :doc:`api_benchmark` —— ``benchmark`` Python 包的 API 参考

@@ -9,26 +9,48 @@ UnifiedQuantum 的 C++ 量子线路模拟内核，独立发版，通过 pybind11
 
 .. toctree::
    :maxdepth: 2
-   :caption: 目录
+   :caption: 开始
 
    usage
+   includes/readme
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 基准测试
+
    benchmark
-   api_benchmark
+   includes/benchmark-methodology
+   includes/benchmark-summary
+   includes/benchmark-results
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API 参考
+
    api_uniqc_cpp
+   api_benchmark
+
+.. toctree::
+   :caption: 项目
+
+   includes/changelog
 
 常用入口
 --------
 
 - :doc:`usage` —— 安装、源码构建与测试
 - :doc:`benchmark` —— 跨模拟器 CPU 基准套件的使用方法
-- :doc:`api_benchmark` —— ``benchmark`` 包 API 参考
+- :doc:`includes/benchmark-summary` —— 一页纸结果摘要
+- :doc:`includes/benchmark-results` —— 最近一轮基准结果的数据与图表
 - :doc:`api_uniqc_cpp` —— ``uniqc_cpp`` 扩展 API 参考
+- :doc:`api_benchmark` —— ``benchmark`` 包 API 参考
 
 其它资料
 --------
 
-- `README <https://github.com/IAI-USTC-Quantum/uniqc-cppsimulator>`_ —— 含基准结果摘要
-- `基准详情与图表 <../doc/benchmark.md>`_ —— doc/benchmark.md，随 report 子命令生成
+- `GitHub 仓库 <https://github.com/IAI-USTC-Quantum/uniqc-cppsimulator>`_ —— 源码与 issue
+- `UnifiedQuantum <https://github.com/IAI-USTC-Quantum/UnifiedQuantum>`_ —— 上层项目
+- `UnifiedQuantum 文档 <https://github.com/IAI-USTC-Quantum/UnifiedQuantum/tree/main/docs/source>`_ —— 框架侧的线路构建 / 模拟 / 提交指南
 - 类型存根 ``uniqc_cpp.pyi`` 随 wheel 一起发布，IDE 与类型检查器可直接使用
 
 索引

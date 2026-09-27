@@ -3,9 +3,10 @@
 
 ``benchmark/`` 是跨模拟器 CPU 性能基准套件：以 ``uniqc_cpp`` 为对象，与主流
 pip 可装 CPU 模拟器广泛对比，覆盖**单线程 vs 多线程**基线、**多线路族 × 多
-qubit 数**与**多噪声模型**。完整方法论与扩展指南见
-`benchmark/README.md <../benchmark/README.md>`_；结果摘要见仓库 README"性能基准"，
-详细数据与图表见 `doc/benchmark.md <../doc/benchmark.md>`_。
+qubit 数**与**多噪声模型**。本页是速览；完整方法论与扩展指南见
+:doc:`includes/benchmark-methodology`，一页纸结果摘要见
+:doc:`includes/benchmark-summary`，最近一轮结果的完整数据与图表 ——
+随 ``report`` 子命令生成 —— 见 :doc:`includes/benchmark-results`
 
 对比对象（未安装的自动跳过并记录原因）：Qiskit Aer（statevector /
 density_matrix）、Cirq（Simulator / DensityMatrixSimulator）、Google qsim

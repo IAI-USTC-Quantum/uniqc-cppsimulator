@@ -5,6 +5,10 @@ benchmark 包 API 参考
 matplotlib），入口为 ``python -m benchmark``。模块按数据流组织：IR → 注册表 →
 线路/噪声生成 → 后端适配 → 运行器 → 图表/报告。
 
+套件的使用方法（CLI 参数、测量的维度、线程模式分类）见 :doc:`benchmark`；
+方法论细节见 :doc:`includes/benchmark-methodology`；最新一轮的测量结果与图表见
+:doc:`includes/benchmark-results`。
+
 线路中间表示
 ------------
 
@@ -74,3 +78,11 @@ matplotlib），入口为 ``python -m benchmark``。模块按数据流组织：I
 ----------
 
 .. automodule:: benchmark.cli
+
+参见
+----
+
+- :doc:`benchmark` —— 套件总览与快速开始
+- :doc:`includes/benchmark-methodology` —— 完整方法论与扩展指南
+- :doc:`includes/benchmark-results` —— 当前测量结果
+- :doc:`api_uniqc_cpp` —— 被测的 C++ 模拟器 API

@@ -3,7 +3,8 @@
 跨模拟器 CPU 性能基准：以 `uniqc_cpp`（Statevector / DensityOperator）为对象，与主流
 pip 可装 CPU 模拟器对比，覆盖**单线程 vs 多线程**基线、**多线路族 × 多 qubit 数**、
 **多噪声模型**。结果摘要进[仓库 README](../README.md#性能基准)，完整数据与图表在
-[doc/benchmark.md](../doc/benchmark.md)。
+[doc/benchmark.md](../doc/benchmark.md)，一页纸摘要在
+[doc/benchmark/README_summary.md](../doc/benchmark/README_summary.md)。
 
 ## 快速开始
 

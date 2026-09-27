@@ -1,1 +1,8 @@
-Sphinx>=7
+# Sphinx docs build dependencies (docs/).
+# The uniqc_cpp extension itself must also be installed (autodoc imports it);
+# numpy is imported by benchmark.backends, matplotlib by benchmark.plotting.
+sphinx>=7
+furo
+myst-parser
+numpy
+matplotlib
