@@ -54,6 +54,14 @@ namespace uniqc {
         const std::vector<size_t>& data_qubits,
         const std::vector<size_t>& control_qubits);
 
+    /* Requires exactly one value per address and rejects values that do not
+     * fit the data register instead of indexing out of bounds or dropping
+     * high bits. Throws InvalidArgument on any violation. */
+    void check_qram_data_validity(
+        size_t addr_size,
+        size_t data_size,
+        const std::vector<size_t>& data_array);
+
     // ============================================================
     // Inline 2x2 statevector (matrix × vector) operation
     // |ψ'⟩ = U |ψ⟩, where ψ = (a0, a1), U = [[u00,u01],[u10,u11]]

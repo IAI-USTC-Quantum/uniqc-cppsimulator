@@ -86,9 +86,8 @@ def _trajectory_shots(payload: tuple) -> int:
         sim = uniqc_cpp.StatevectorSimulator()
         sim.init_n_qubit(n_qubits)
         _apply_ops(sim, ops)
-        # list overload: the scalar overload of measure_single_shot recurses
-        # into itself (braced-init-list resolves to the size_t overload) and
-        # dead-loops in every released wheel incl. 1.0.1 — see doc notes
+        # Keep the list overload so comparisons against 1.0.1 remain usable:
+        # that release's scalar overload recurses into itself forever.
         ones += sim.measure_single_shot([0])
     return ones
 
