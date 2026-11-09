@@ -1,16 +1,22 @@
-"""Unit tests for the benchmark framework itself (no simulator required).
+"""Unit tests for the benchmark framework itself.
 
-Only exercises the dependency-free modules: IR, circuit families, noise
-presets and preset matrices.  Adapter-level correctness is covered by
-``python -m benchmark selftest`` in a prepared environment.
+The IR / circuit-family / noise-preset / matrix tests are dependency-free;
+the CLI ``selftest`` semantics tests import ``benchmark.cli`` and therefore
+need the ``uniqc_cpp`` extension itself (as ``tests/test_bindings.py`` does;
+external comparison simulators are never required).  Adapter-level
+correctness is covered by ``python -m benchmark selftest`` in a prepared
+environment.
 """
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
+from benchmark.backends.base import BenchmarkBackend
 from benchmark.ir import Circuit, NoisePreset, Op, apply_noise, is_channel
-from benchmark.registry import CIRCUITS, NOISE, register_circuit
+from benchmark.registry import CIRCUITS, NOISE, register_backend, register_circuit
 
 
 def test_op_validates_qubit_arity() -> None:
@@ -67,3 +73,98 @@ def test_registry_rejects_duplicate_circuit_name() -> None:
         @register_circuit("ghz")
         def _dupe(n: int, d: int, seed: int) -> Circuit:
             return Circuit("x", n, ())
+
+
+# ---------------------------------------------------------------------------
+# CLI selftest semantics (benchmark.cli.cmd_selftest)
+# ---------------------------------------------------------------------------
+
+
+class _ProbeBackend(BenchmarkBackend):
+    """Registration helper for CLI tests; removed again in ``finally``."""
+
+    def run(self, circuit: Circuit, shots: int, seed: int) -> dict:  # pragma: no cover
+        raise AssertionError("probe backends never execute circuits")
+
+
+def _cli_with_stubbed_worker(monkeypatch, backend_cls, worker_results):
+    from benchmark import cli
+
+    if backend_cls is not None:
+        register_backend(backend_cls)
+    monkeypatch.setattr(cli.runner, "selftest_backends", lambda names: worker_results)
+    return cli
+
+
+def test_selftest_skips_uninstalled_backends(monkeypatch, capsys) -> None:
+    """Uninstalled simulators are 'missing', not failures (same filter as run)."""
+    from benchmark.registry import BACKENDS
+
+    class _Missing(_ProbeBackend):
+        name = "_cli_missing"
+        import_name = "definitely_not_installed_module_xyz"
+
+    cli = _cli_with_stubbed_worker(
+        monkeypatch, _Missing,
+        worker_results={"_cli_missing": {"selftest": "fail", "cases": []}},
+    )
+    try:
+        cli.main(["selftest", "--backends", "_cli_missing"])  # must not SystemExit
+        out = capsys.readouterr().out
+        assert "_cli_missing" in out
+        assert "missing (" in out
+    finally:
+        del BACKENDS["_cli_missing"]
+
+
+def test_selftest_fails_on_reachable_backend_failing_known_answer(
+    monkeypatch, capsys
+) -> None:
+    from benchmark.registry import BACKENDS
+
+    class _Failing(_ProbeBackend):
+        name = "_cli_failing"
+
+    cli = _cli_with_stubbed_worker(
+        monkeypatch, _Failing,
+        worker_results={"_cli_failing": {"selftest": "fail", "cases": []}},
+    )
+    try:
+        with pytest.raises(SystemExit) as exc:
+            cli.main(["selftest", "--backends", "_cli_failing"])
+        assert exc.value.code == 1
+        out = capsys.readouterr().out
+        assert "fail" in out
+    finally:
+        del BACKENDS["_cli_failing"]
+
+
+def test_selftest_rejects_unknown_backend_name(monkeypatch, capsys) -> None:
+    cli = _cli_with_stubbed_worker(monkeypatch, None, worker_results={})
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["selftest", "--backends", "no_such_backend"])
+    assert exc.value.code == 1
+    assert "unknown backend name" in capsys.readouterr().out
+
+
+def test_worker_selftest_reports_construction_errors_as_data(capsys) -> None:
+    """A backend whose constructor raises must yield a JSON record, not a
+    bare traceback (the old code left the worker without output, which the
+    runner recorded as a subprocess error instead of a selftest failure)."""
+    from benchmark.registry import BACKENDS
+    from benchmark.worker import run_selftest
+
+    class _Broken(_ProbeBackend):
+        name = "_worker_broken"
+
+        def __init__(self, threads: int = 1) -> None:
+            raise RuntimeError("boom")
+
+    register_backend(_Broken)
+    try:
+        run_selftest("_worker_broken")
+    finally:
+        del BACKENDS["_worker_broken"]
+    record = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert record["selftest"] == "fail"
+    assert "during construction" in record["cases"][0]["error"]

@@ -80,8 +80,9 @@ def fig_ideal_runtime(data: dict, out_dir: str) -> tuple[str, str]:
         return "", ""
     circuits = sorted({r["circuit"] for r in results})
     threads_list = sorted({r["threads"] for r in results})
-    # Use the single-thread tier: it is the only one where every backend
-    # (incl. uniqc_sv, whose parallelism is shot-level) has comparable data.
+    # Use the single-thread tier: the like-for-like cross-simulator
+    # comparison (multi-thread tiers only exist for the backends with a
+    # thread knob; see the thread-speedup figure for those).
     threads = threads_list[0]
     rows = [r for r in results if r["threads"] == threads]
 
@@ -89,7 +90,7 @@ def fig_ideal_runtime(data: dict, out_dir: str) -> tuple[str, str]:
         1, len(circuits), figsize=(5.2 * len(circuits), 4.2), squeeze=False
     )
     colors = _color_map(sorted({r["backend"] for r in rows}))
-    for ax, circuit in zip(axes[0], circuits):
+    for ax, circuit in zip(axes[0], circuits, strict=True):
         sub = [r for r in rows if r["circuit"] == circuit]
         backends = sorted({r["backend"] for r in sub})
         for backend in backends:
@@ -99,7 +100,7 @@ def fig_ideal_runtime(data: dict, out_dir: str) -> tuple[str, str]:
             )
             if not pts:
                 continue
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=True)
             ax.plot(xs, ys, marker="o", label=_label(backend), color=colors[backend],
                     linewidth=2.2 if backend.startswith("uniqc") else 1.4,
                     zorder=3 if backend.startswith("uniqc") else 2)
@@ -151,7 +152,8 @@ def fig_thread_speedup(data: dict, out_dir: str) -> tuple[str, str]:
     ax.set_ylabel(f"speedup  (threads=1 time / threads={tn} time)")
     ax.set_title(
         "Single- vs multi-thread baseline (kernel-internal parallelism, largest common n)\n"
-        "(uniqc_sv parallelism is shot-level: see sampling_throughput.png)"
+        "(uniqc_sv/dm threads are kernel gate-level; uniqc_sv_batch (process-pool shots)\n"
+        "only runs in shots mode: see sampling_throughput.png)"
     )
     ax.grid(True, axis="y", alpha=0.3)
     ax.legend(fontsize=8)
@@ -173,7 +175,7 @@ def fig_noise_runtime(data: dict, out_dir: str) -> tuple[str, str]:
         1, len(noise_names), figsize=(5.0 * len(noise_names), 4.2), squeeze=False
     )
     colors = _color_map(sorted({r["backend"] for r in rows}))
-    for ax, noise in zip(axes[0], noise_names):
+    for ax, noise in zip(axes[0], noise_names, strict=True):
         sub = [r for r in rows if r["noise"] == noise and r["threads"] == threads]
         backends = sorted({r["backend"] for r in sub})
         for backend in backends:
@@ -183,7 +185,7 @@ def fig_noise_runtime(data: dict, out_dir: str) -> tuple[str, str]:
             )
             if not pts:
                 continue
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=True)
             ax.plot(xs, ys, marker="s", label=_label(backend), color=colors[backend],
                     linewidth=2.2 if backend.startswith("uniqc") else 1.4)
         ax.set_title(f"noise: {noise} (threads={threads})")

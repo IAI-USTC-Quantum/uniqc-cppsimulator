@@ -59,8 +59,9 @@ class BenchmarkBackend(ABC):
             return False, f"module '{cls.import_name}' not installed"
         return True, ""
 
-    def set_threads(self, n: int) -> None:  # pragma: no cover - default no-op
-        """Hook for ``threads_mode == "option"`` backends."""
+    def set_threads(self, n: int) -> None:  # pragma: no cover - default no-op  # noqa: B027 - intentional overridable hook, not abstract
+        """Hook for ``threads_mode == "option"`` backends (no-op default)."""
+        ...
 
     def supports(self, circuit: Circuit, shots: int) -> str | None:
         """Return a skip reason, or None when this backend can run the case."""
