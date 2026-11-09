@@ -73,6 +73,27 @@ int main() {
             return 1;
         }
 
+        bool qram_validation_threw = false;
+        try {
+            statevector.qram({0}, {1}, {0});
+        } catch (const std::invalid_argument&) {
+            qram_validation_threw = true;
+        }
+        if (!qram_validation_threw) {
+            std::cerr << "StatevectorSimulator::qram accepted a short data array\n";
+            return 1;
+        }
+        qram_validation_threw = false;
+        try {
+            density_operator_2q.qram({0}, {1}, {0, 2});
+        } catch (const std::invalid_argument&) {
+            qram_validation_threw = true;
+        }
+        if (!qram_validation_threw) {
+            std::cerr << "DensityOperatorSimulator::qram accepted an overflowing data value\n";
+            return 1;
+        }
+
         // 多线程路径：全局开关 + 线程数下 Bell 态概率不变
         uniqc::set_parallel_enabled(true);
         uniqc::set_num_threads(4);

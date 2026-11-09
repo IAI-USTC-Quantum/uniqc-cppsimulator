@@ -55,6 +55,44 @@ namespace uniqc {
         return mask;
     }
 
+    void check_qram_data_validity(
+        size_t addr_size,
+        size_t data_size,
+        const std::vector<size_t>& data_array)
+    {
+        constexpr size_t size_t_bits = sizeof(size_t) * 8;
+        if (addr_size >= size_t_bits || data_size > size_t_bits)
+        {
+            auto errstr = fmt::format(
+                "QRAM address/data sizes ({}/{}) exceed the native size_t representation ({} bits).",
+                addr_size, data_size, size_t_bits);
+            ThrowInvalidArgument(errstr);
+        }
+
+        const size_t expected_size = size_t{ 1 } << addr_size;
+        if (data_array.size() != expected_size)
+        {
+            auto errstr = fmt::format(
+                "QRAM data array size ({}) does not match 2^addr_size ({}).",
+                data_array.size(), expected_size);
+            ThrowInvalidArgument(errstr);
+        }
+
+        if (data_size == size_t_bits)
+            return;
+        const size_t value_limit = size_t{ 1 } << data_size;
+        for (size_t i = 0; i < data_array.size(); ++i)
+        {
+            if (data_array[i] >= value_limit)
+            {
+                auto errstr = fmt::format(
+                    "QRAM data value ({}) at index {} does not fit data_size = {}.",
+                    data_array[i], i, data_size);
+                ThrowInvalidArgument(errstr);
+            }
+        }
+    }
+
     void check_qram_qubit_validity(
         const std::vector<size_t>& addr_qubits,
         const std::vector<size_t>& data_qubits,

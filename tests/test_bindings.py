@@ -157,6 +157,85 @@ def test_qram_valid_call_succeeds_on_both_backends() -> None:
     dm.qram([0, 1], [2, 3], [0] * 4, [4, 5])
 
 
+@pytest.mark.parametrize("simulator_name", SIMULATORS)
+def test_qram_rejects_wrong_data_array_size(simulator_name: str) -> None:
+    sim = make_sim(simulator_name, 2)
+    for data_array in ([], [0], [0, 0, 0]):
+        with pytest.raises(ValueError, match="QRAM data array size"):
+            sim.qram([0], [1], data_array)
+
+
+@pytest.mark.parametrize("simulator_name", SIMULATORS)
+def test_qram_rejects_value_that_exceeds_data_width(simulator_name: str) -> None:
+    sim = make_sim(simulator_name, 2)
+    with pytest.raises(ValueError, match="does not fit data_size = 1"):
+        sim.qram([0], [1], [0, 2])
+
+
+@pytest.mark.parametrize("simulator_name", SIMULATORS)
+def test_qram_bit_order_and_self_inverse(simulator_name: str) -> None:
+    sim = make_sim(simulator_name, 5)
+    sim.x(0)
+    sim.x(4)
+    sim.qram([0, 1], [2, 3], [0, 2, 1, 3], [4])
+    assert sim.get_prob({0: 1, 1: 0, 2: 0, 3: 1, 4: 1}) == pytest.approx(1.0)
+
+    sim.qram([0, 1], [2, 3], [0, 2, 1, 3], [4])
+    assert sim.get_prob({0: 1, 1: 0, 2: 0, 3: 0, 4: 1}) == pytest.approx(1.0)
+
+
+# ---------------------------------------------------------------------------
+# Measurement return types, bit order and reproducibility
+# ---------------------------------------------------------------------------
+
+
+def test_single_shot_uses_argument_order_and_does_not_collapse() -> None:
+    sim = make_sim("StatevectorSimulator", 3)
+    sim.x(2)
+    before = sim.state
+    assert sim.pmeasure([2, 0]) == pytest.approx([0.0, 1.0, 0.0, 0.0])
+    assert sim.measure_single_shot([2, 0]) == 1
+    assert sim.measure_single_shot(2) == 1
+    assert isinstance(sim.measure_single_shot([2, 0]), int)
+    assert sim.state == before
+
+
+def test_single_shot_seeding_replays_without_consuming_extra_draws() -> None:
+    def fresh():
+        sim = make_sim("StatevectorSimulator", 2)
+        sim.hadamard(0)
+        sim.cnot(0, 1)
+        return sim
+
+    uniqc_cpp.seed(90210)
+    first = fresh()
+    first_outcome = first.measure_single_shot([0, 1])
+    uniqc_cpp.seed(90210)
+    second = fresh()
+    second_outcome = second.measure_single_shot([0, 1])
+
+    assert first_outcome == second_outcome
+    assert first.state == second.state
+    assert first.pmeasure([0, 1]) == pytest.approx([0.5, 0.0, 0.0, 0.5])
+
+
+@pytest.mark.parametrize("simulator_name", SIMULATORS)
+def test_seed_replays_mid_circuit_measurement(simulator_name: str) -> None:
+    def run():
+        sim = make_sim(simulator_name, 2)
+        sim.hadamard(0)
+        sim.cnot(0, 1)
+        uniqc_cpp.seed(314159)
+        outcome = sim.measure_qubit(0)
+        return outcome, sim.state
+
+    first_outcome, first_state = run()
+    second_outcome, second_state = run()
+    assert first_outcome == second_outcome
+    assert first_state == second_state
+    assert first_outcome in (0, 1)
+
+
 # ---------------------------------------------------------------------------
 # Noise-channel regressions
 # ---------------------------------------------------------------------------
@@ -283,10 +362,11 @@ def _run_mixed_circuit(name: str, n_qubits: int):
     return sim
 
 
-def test_parallel_gates_match_serial_bitwise() -> None:
-    """Gate kernels have no reductions, so the parallel state must be
-    bit-for-bit identical to the serial one (14 qubits = 2^14 amplitudes
-    crosses the MIN_PARALLEL_WORK threshold, exercising real threads)."""
+def test_parallel_gates_match_serial() -> None:
+    """Gate kernels preserve the state (14 qubits = 2^14 amplitudes crosses
+    MIN_PARALLEL_WORK and exercises real threads). Serial and worker loop
+    bodies can be compiled with different floating-point contraction, so
+    exact bitwise equality is not portable across compilers."""
     n_qubits = 14
     serial = _run_mixed_circuit("StatevectorSimulator", n_qubits)
     state_serial = serial.state
@@ -295,7 +375,7 @@ def test_parallel_gates_match_serial_bitwise() -> None:
     uniqc_cpp.set_parallel_enabled(True)
     parallel = _run_mixed_circuit("StatevectorSimulator", n_qubits)
 
-    assert parallel.state == state_serial
+    assert parallel.state == pytest.approx(state_serial, rel=1e-12, abs=1e-12)
 
 
 def test_parallel_readouts_match_serial_approximately() -> None:

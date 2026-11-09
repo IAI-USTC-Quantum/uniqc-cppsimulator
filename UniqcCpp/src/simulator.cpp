@@ -786,6 +786,7 @@ namespace uniqc {
             CHECK_QUBIT_RANGE(qn)
 
         check_qram_qubit_validity(addr_qubits, data_qubits, control_qubits);
+        check_qram_data_validity(addr_qubits.size(), data_qubits.size(), data_array);
 
         size_t controller_mask = make_controller_mask(control_qubits, total_qubit);
         qram_permutation_impl(state, addr_qubits, data_qubits, data_array, total_qubit, controller_mask);

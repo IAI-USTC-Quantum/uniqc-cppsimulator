@@ -37,7 +37,7 @@ sim.cnot(0, 1)
 print(sim.pmeasure([0, 1]))  # Bell 态: [0.5, 0, 0, 0.5]
 ```
 
-完整 API 见仓库根目录的类型存根 [`uniqc_cpp.pyi`](uniqc_cpp.pyi)（安装后随扩展一起发布，IDE / 类型检查器可直接使用）。
+完整 API 见仓库根目录的类型存根 [`uniqc_cpp.pyi`](uniqc_cpp.pyi)（安装后随扩展一起发布，IDE / 类型检查器可直接使用）。测量列表的第一个量子比特是返回整数的最低有效位；`measure_single_shot` 只采样、不坍缩状态，`measure_qubit` 才执行坍缩测量。两个后端均为稠密存储，30 比特态矢量仅状态本身即需 16 GiB，实际可用规模还受内存限制。
 
 ## 源码构建要求
 
