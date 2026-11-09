@@ -1,9 +1,9 @@
 """Copy repository markdown sources into the Sphinx source tree before a build.
 
 Sphinx can only include documents that live inside its source directory, so
-README.md / CHANGELOG.md / benchmark/README.md / doc/benchmark.md /
-doc/benchmark/README_summary.md (plus the benchmark plots under
-doc/benchmark/) are copied into ``docs/includes/`` -- git-ignored and
+README.md / CHANGELOG.md / benchmark/README.md / docs/benchmark/report.md /
+docs/benchmark/README_summary.md (plus the benchmark plots under
+docs/benchmark/) are copied into ``docs/includes/`` -- git-ignored and
 regenerated on every build, keeping a single source of truth.
 
 Repo-relative links inside the copies are rewritten to point at the sibling
@@ -35,8 +35,8 @@ COPIES: list[tuple[Path, Path, dict[str, str]]] = [
         INCLUDES / "readme.md",
         {
             # Sibling documents inside docs/includes/
-            "](doc/benchmark.md)": "](benchmark-results.md)",
-            "](doc/benchmark/README_summary.md)": "](benchmark-summary.md)",
+            "](docs/benchmark/report.md)": "](benchmark-results.md)",
+            "](docs/benchmark/README_summary.md)": "](benchmark-summary.md)",
             "](benchmark/README.md)": "](benchmark-methodology.md)",
             "](CHANGELOG.md)": "](changelog.md)",
             # Repo files that are not part of the site -> absolute GitHub links
@@ -50,7 +50,7 @@ COPIES: list[tuple[Path, Path, dict[str, str]]] = [
         INCLUDES / "changelog.md",
         {
             "](README.md#性能基准)": "](readme.md#性能基准)",
-            "](doc/benchmark.md)": "](benchmark-results.md)",
+            "](docs/benchmark/report.md)": "](benchmark-results.md)",
             "](benchmark/README.md)": "](benchmark-methodology.md)",
         },
     ),
@@ -59,26 +59,30 @@ COPIES: list[tuple[Path, Path, dict[str, str]]] = [
         INCLUDES / "benchmark-methodology.md",
         {
             "](../README.md#性能基准)": "](readme.md#性能基准)",
-            "](../doc/benchmark.md)": "](benchmark-results.md)",
-            "](../doc/benchmark/README_summary.md)": "](benchmark-summary.md)",
+            "](../docs/benchmark/report.md)": "](benchmark-results.md)",
+            "](../docs/benchmark/README_summary.md)": "](benchmark-summary.md)",
         },
     ),
     (
-        ROOT / "doc" / "benchmark.md",
+        DOCS_DIR / "benchmark" / "report.md",
         INCLUDES / "benchmark-results.md",
         {
-            "](../benchmark/README.md)": "](benchmark-methodology.md)",
-            "](../README.md#性能基准)": "](readme.md#性能基准)",
-            "](benchmark/README_summary.md)": "](benchmark-summary.md)",
-            # benchmark/*.png image links stay relative; the plots are copied
-            # to includes/benchmark/ below so they resolve as-is.
+            "](../../benchmark/README.md)": "](benchmark-methodology.md)",
+            "](../../README.md#性能基准)": "](readme.md#性能基准)",
+            "](README_summary.md)": "](benchmark-summary.md)",
+            # Same-directory image links get the benchmark/ prefix of the
+            # copied plots (see ASSET_COPIES below).
+            "(ideal_runtime_vs_qubits.png)": "(benchmark/ideal_runtime_vs_qubits.png)",
+            "(thread_speedup.png)": "(benchmark/thread_speedup.png)",
+            "(noise_runtime_vs_qubits.png)": "(benchmark/noise_runtime_vs_qubits.png)",
+            "(sampling_throughput.png)": "(benchmark/sampling_throughput.png)",
         },
     ),
     (
-        ROOT / "doc" / "benchmark" / "README_summary.md",
+        DOCS_DIR / "benchmark" / "README_summary.md",
         INCLUDES / "benchmark-summary.md",
         {
-            "](doc/benchmark.md)": "](benchmark-results.md)",
+            "](report.md)": "](benchmark-results.md)",
             "](../../benchmark/README.md)": "](benchmark-methodology.md)",
             "](../../README.md#性能基准)": "](readme.md#性能基准)",
             "](../../README.md#快速上手)": "](readme.md#快速上手)",
@@ -88,7 +92,7 @@ COPIES: list[tuple[Path, Path, dict[str, str]]] = [
 
 # (source directory, glob, destination directory)
 ASSET_COPIES: list[tuple[Path, str, Path]] = [
-    (ROOT / "doc" / "benchmark", "*.png", INCLUDES / "benchmark"),
+    (DOCS_DIR / "benchmark", "*.png", INCLUDES / "benchmark"),
 ]
 
 

@@ -86,7 +86,7 @@ def cmd_plot(args: argparse.Namespace) -> None:
 
 
 def cmd_report(args: argparse.Namespace) -> None:
-    """Generate ``doc/benchmark.md`` and the README summary include."""
+    """Generate ``docs/benchmark/report.md`` and the README summary."""
     with open(args.results, encoding="utf-8") as fh:
         data = json.load(fh)
     doc = report.write_report(data, args.doc_dir)
@@ -120,12 +120,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_plot = sub.add_parser("plot", help="render charts from a results JSON")
     p_plot.add_argument("--results", default="benchmark/results.json")
-    p_plot.add_argument("--out-dir", default="doc/benchmark")
+    p_plot.add_argument("--out-dir", default="docs/benchmark")
     p_plot.set_defaults(func=cmd_plot)
 
-    p_rep = sub.add_parser("report", help="generate doc/benchmark.md and README summary")
+    p_rep = sub.add_parser("report", help="generate docs/benchmark/report.md and README summary")
     p_rep.add_argument("--results", default="benchmark/results.json")
-    p_rep.add_argument("--doc-dir", default="doc")
+    p_rep.add_argument("--doc-dir", default="docs/benchmark")
     p_rep.set_defaults(func=cmd_report)
     return parser
 
