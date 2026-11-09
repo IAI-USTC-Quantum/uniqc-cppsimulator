@@ -77,7 +77,10 @@ def cmd_run(args: argparse.Namespace) -> None:
 
 def cmd_plot(args: argparse.Namespace) -> None:
     """Render every registered figure from a results JSON."""
-    figures = plotting.plot_all(args.results, args.out_dir)
+    try:
+        figures = plotting.plot_all(args.results, args.out_dir)
+    except ImportError as exc:
+        sys.exit(f"plot requires the matplotlib stack (pip install matplotlib): {exc}")
     for _, path in figures:
         print(f"wrote {path}")
 

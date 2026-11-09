@@ -11,6 +11,7 @@ environment.
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -168,3 +169,24 @@ def test_worker_selftest_reports_construction_errors_as_data(capsys) -> None:
     record = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert record["selftest"] == "fail"
     assert "during construction" in record["cases"][0]["error"]
+
+
+def test_backend_registry_importable_without_numpy() -> None:
+    """Importing the registry (list/selftest/probe path) must not require
+    numpy — a fresh interpreter with numpy blocked has to import
+    benchmark.backends and benchmark.cli cleanly on a machine where only
+    uniqc_cpp is installed."""
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; sys.modules['numpy'] = None\n"  # any later import of numpy fails
+        "import benchmark.backends, benchmark.cli; print('ok')"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True,
+        timeout=60, check=False, cwd=os.path.dirname(os.path.dirname(__file__)),
+        env={**os.environ, "PYTHONPATH": ""},
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "ok" in proc.stdout

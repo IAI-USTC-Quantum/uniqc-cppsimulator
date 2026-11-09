@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
-
 from benchmark.backends.base import BenchmarkBackend
 from benchmark.backends.util import prob_q0_1_from_statevector
 from benchmark.ir import Circuit
@@ -28,6 +26,7 @@ class QuTiPSimulator(BenchmarkBackend):
     homepage = "https://github.com/qutip/qutip"
 
     def run(self, circuit: Circuit, shots: int, seed: int) -> dict:
+        import numpy as np
         import qutip
         from qutip.qip.circuit import CircuitSimulator, QubitCircuit
 

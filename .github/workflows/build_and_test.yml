@@ -20,9 +20,7 @@ jobs:
       uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
 
     - name: Ruff check
-      run: |
-        uv pip install --system ruff==0.17.4
-        ruff check .
+      run: uvx ruff@0.17.4 check .
 
   build:
     runs-on: ${{ matrix.os }}
