@@ -110,7 +110,12 @@ def run_selftest(backend_name: str, threads: int = 1) -> None:
     from benchmark.backends import BACKENDS
 
     cls = BACKENDS[backend_name]
-    backend = cls(threads=threads)
+    try:
+        backend = cls(threads=threads)
+    except Exception as exc:  # noqa: BLE001 - selftest reports any failure
+        _emit({"backend": backend_name, "selftest": "fail",
+               "cases": [{"error": f"during construction: {type(exc).__name__}: {exc}"}]})
+        return
     results = []
     ok = True
     for circuit, expected, tol in _reference_cases():

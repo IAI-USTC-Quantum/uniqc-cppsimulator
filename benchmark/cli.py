@@ -32,11 +32,27 @@ def cmd_list(args: argparse.Namespace) -> None:
 
 
 def cmd_selftest(args: argparse.Namespace) -> None:
-    """Run the known-answer check for the requested (or all) backends."""
+    """Run the known-answer check for the requested (or all) backends.
+
+    Applies the same availability filter as ``run``: backends whose simulator
+    package is not installed are reported as ``missing (reason)`` and skipped,
+    so a partial environment still exits 0.  Only a reachable backend that
+    fails the known-answer check (or an unknown name given via ``--backends``)
+    is an error.
+    """
     names = args.backends.split(",") if args.backends else sorted(BACKENDS)
-    results = runner.selftest_backends(names)
     failed = []
-    for name, res in results.items():
+    for name in names:
+        cls = BACKENDS.get(name)
+        if cls is None:
+            print(f"{name:<14} unknown backend name")
+            failed.append(name)
+            continue
+        available, reason = cls.availability()
+        if not available:
+            print(f"{name:<14} missing ({reason})")
+            continue
+        res = runner.selftest_backends([name])[name]
         status = res.get("selftest", res.get("status", "?"))
         print(f"{name:<14} {status}")
         if status != "pass":
@@ -61,8 +77,11 @@ def cmd_run(args: argparse.Namespace) -> None:
 
 def cmd_plot(args: argparse.Namespace) -> None:
     """Render every registered figure from a results JSON."""
-    figures = plotting.plot_all(args.results, args.out_dir)
-    for fig, path in figures:
+    try:
+        figures = plotting.plot_all(args.results, args.out_dir)
+    except ImportError as exc:
+        sys.exit(f"plot requires the matplotlib stack (pip install matplotlib): {exc}")
+    for _, path in figures:
         print(f"wrote {path}")
 
 

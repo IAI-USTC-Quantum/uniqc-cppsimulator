@@ -15,6 +15,7 @@ uv pip install --python .venv-bench/bin/python uniqc-cppsimulator \
     qibo qibojit quimb qutip qutip-qip amazon-braket-sdk   # 按需安装对比对象
 .venv-bench/bin/python -m benchmark list          # 看已注册后端/线路/噪声/预设
 .venv-bench/bin/python -m benchmark selftest      # 适配器正确性（已知答案）检查
+                                                 # （未安装的模拟器按 missing 跳过，同 run 的可用性过滤）
 .venv-bench/bin/python -m benchmark run --preset smoke   # ~2 分钟冒烟
 .venv-bench/bin/python -m benchmark run --preset standard --out benchmark/results.json
 .venv-bench/bin/python -m benchmark plot    --results benchmark/results.json
@@ -32,9 +33,9 @@ uv pip install --python .venv-bench/bin/python uniqc-cppsimulator \
 | 维度 | 取值 | 说明 |
 |---|---|---|
 | 线路族 | `ghz`, `qft`, `random`(分层随机), `qaoa` | 由 `benchmark/circuits.py` 注册，按 `(n_qubits, depth, seed)` 参数化 |
-| qubit 数 | 4 → 26（standard） | 每个后端有各自上限（如密度矩阵 10–15q） |
+| qubit 数 | 4 → 24（standard） | 每个后端有各自上限（如密度矩阵 10–15q） |
 | 噪声 | `none`, `depol`, `depol-strong`, `adamp`, `bitflip` | 以内联通道算子插入门后（`benchmark/noise.py` + `ir.apply_noise`） |
-| shots | 0（精确概率）或 1024（轨迹采样） | 采样模式衡量含噪线路的 shots 吞吐 |
+| shots | 0（精确概率）或 >0（轨迹采样，standard 为 1024） | 采样模式衡量含噪线路的 shots 吞吐 |
 | 线程 | 1 vs N（`presets.DEFAULT_THREADS`） | 见下 |
 
 指标：warm-up 1 次 + N 次重复的**墙钟时间**（median/mean/min/std，ms）、峰值 RSS、

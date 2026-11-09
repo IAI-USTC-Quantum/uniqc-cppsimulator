@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import prepare  # noqa: E402  (docs/prepare.py, made importable just above)
+import prepare  # (docs/prepare.py, made importable just above)
 
 prepare.prepare()
 

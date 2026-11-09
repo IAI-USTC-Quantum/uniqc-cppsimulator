@@ -203,6 +203,7 @@ benchmark/results*.json
 !doc/benchmark/*.png
 
 # CMake build artifacts
+build-cpp/
 UniqcCpp/CMakeCache.txt
 UniqcCpp/CMakeFiles/
 UniqcCpp/Makefile

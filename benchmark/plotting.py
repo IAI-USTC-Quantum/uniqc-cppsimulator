@@ -3,17 +3,16 @@
 Each figure is an independent function so new chart types can be added
 without touching the dispatcher: implement ``fig_xxx(data, out_dir)`` and
 register it in ``PLOTTERS``.
+
+matplotlib (and numpy) are imported lazily inside the figure functions so
+that ``python -m benchmark list / selftest / run`` work on machines without
+them — only ``plot`` needs the plotting stack.
 """
 
 from __future__ import annotations
 
 import os
 from collections.abc import Callable
-
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 from benchmark.backends import BACKENDS
 
@@ -25,6 +24,16 @@ PLOTTERS: list[FigureFunc] = []
 def plotter(func: FigureFunc) -> FigureFunc:
     PLOTTERS.append(func)
     return func
+
+
+def _plt():
+    """Import matplotlib headlessly on first use and return the pyplot module."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def _ok(results: list[dict]) -> list[dict]:
@@ -55,7 +64,7 @@ def _label(backend: str) -> str:
     return BACKENDS[backend].label if backend in BACKENDS else backend
 
 
-def _save(fig, out_dir: str, name: str) -> tuple[str, str]:
+def _save(plt, fig, out_dir: str, name: str) -> tuple[str, str]:
     """Write a figure to ``out_dir/name`` and return (name, path)."""
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, name)
@@ -80,16 +89,18 @@ def fig_ideal_runtime(data: dict, out_dir: str) -> tuple[str, str]:
         return "", ""
     circuits = sorted({r["circuit"] for r in results})
     threads_list = sorted({r["threads"] for r in results})
-    # Use the single-thread tier: it is the only one where every backend
-    # (incl. uniqc_sv, whose parallelism is shot-level) has comparable data.
+    # Use the single-thread tier: the like-for-like cross-simulator
+    # comparison (multi-thread tiers only exist for the backends with a
+    # thread knob; see the thread-speedup figure for those).
     threads = threads_list[0]
     rows = [r for r in results if r["threads"] == threads]
 
+    plt = _plt()
     fig, axes = plt.subplots(
         1, len(circuits), figsize=(5.2 * len(circuits), 4.2), squeeze=False
     )
     colors = _color_map(sorted({r["backend"] for r in rows}))
-    for ax, circuit in zip(axes[0], circuits):
+    for ax, circuit in zip(axes[0], circuits, strict=True):
         sub = [r for r in rows if r["circuit"] == circuit]
         backends = sorted({r["backend"] for r in sub})
         for backend in backends:
@@ -99,7 +110,7 @@ def fig_ideal_runtime(data: dict, out_dir: str) -> tuple[str, str]:
             )
             if not pts:
                 continue
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=True)
             ax.plot(xs, ys, marker="o", label=_label(backend), color=colors[backend],
                     linewidth=2.2 if backend.startswith("uniqc") else 1.4,
                     zorder=3 if backend.startswith("uniqc") else 2)
@@ -112,7 +123,7 @@ def fig_ideal_runtime(data: dict, out_dir: str) -> tuple[str, str]:
     fig.legend(handles, labels, loc="lower center", ncol=min(10, len(labels)),
                fontsize=8, bbox_to_anchor=(0.5, -0.06))
     fig.suptitle("Ideal statevector simulation — runtime vs qubits", y=1.02)
-    return _save(fig, out_dir, "ideal_runtime_vs_qubits.png")
+    return _save(plt, fig, out_dir, "ideal_runtime_vs_qubits.png")
 
 
 @plotter
@@ -127,6 +138,7 @@ def fig_thread_speedup(data: dict, out_dir: str) -> tuple[str, str]:
         return "", ""
     t1, tn = threads_list[0], threads_list[-1]
 
+    plt = _plt()
     fig, ax = plt.subplots(figsize=(1.9 * len(circuits) + 2, 4.6))
     width = 0.8 / len(circuits)
     backends = sorted({r["backend"] for r in results})
@@ -151,11 +163,12 @@ def fig_thread_speedup(data: dict, out_dir: str) -> tuple[str, str]:
     ax.set_ylabel(f"speedup  (threads=1 time / threads={tn} time)")
     ax.set_title(
         "Single- vs multi-thread baseline (kernel-internal parallelism, largest common n)\n"
-        "(uniqc_sv parallelism is shot-level: see sampling_throughput.png)"
+        "(uniqc_sv/dm threads are kernel gate-level; uniqc_sv_batch (process-pool shots)\n"
+        "only runs in shots mode: see sampling_throughput.png)"
     )
     ax.grid(True, axis="y", alpha=0.3)
     ax.legend(fontsize=8)
-    return _save(fig, out_dir, "thread_speedup.png")
+    return _save(plt, fig, out_dir, "thread_speedup.png")
 
 
 @plotter
@@ -169,11 +182,12 @@ def fig_noise_runtime(data: dict, out_dir: str) -> tuple[str, str]:
     noise_names = [n for n in noise_names if n != "none"] or noise_names
     threads = min(r["threads"] for r in rows)
 
+    plt = _plt()
     fig, axes = plt.subplots(
         1, len(noise_names), figsize=(5.0 * len(noise_names), 4.2), squeeze=False
     )
     colors = _color_map(sorted({r["backend"] for r in rows}))
-    for ax, noise in zip(axes[0], noise_names):
+    for ax, noise in zip(axes[0], noise_names, strict=True):
         sub = [r for r in rows if r["noise"] == noise and r["threads"] == threads]
         backends = sorted({r["backend"] for r in sub})
         for backend in backends:
@@ -183,7 +197,7 @@ def fig_noise_runtime(data: dict, out_dir: str) -> tuple[str, str]:
             )
             if not pts:
                 continue
-            xs, ys = zip(*pts)
+            xs, ys = zip(*pts, strict=True)
             ax.plot(xs, ys, marker="s", label=_label(backend), color=colors[backend],
                     linewidth=2.2 if backend.startswith("uniqc") else 1.4)
         ax.set_title(f"noise: {noise} (threads={threads})")
@@ -193,7 +207,7 @@ def fig_noise_runtime(data: dict, out_dir: str) -> tuple[str, str]:
         ax.grid(True, which="both", alpha=0.3)
     axes[0][0].legend(fontsize=8, loc="best")
     fig.suptitle("Noisy density-matrix simulation — runtime vs qubits", y=1.02)
-    return _save(fig, out_dir, "noise_runtime_vs_qubits.png")
+    return _save(plt, fig, out_dir, "noise_runtime_vs_qubits.png")
 
 
 @plotter
@@ -202,6 +216,7 @@ def fig_sampling_throughput(data: dict, out_dir: str) -> tuple[str, str]:
     rows = [r for r in _ok(data["results"]) if r.get("group") == "sampling"]
     if not rows:
         return "", ""
+    plt = _plt()
     fig, ax = plt.subplots(figsize=(7.2, 4.4))
     width = 0.8 / max(1, len({r["threads"] for r in rows}))
     qubits = sorted({r["n_qubits"] for r in rows})
@@ -233,7 +248,7 @@ def fig_sampling_throughput(data: dict, out_dir: str) -> tuple[str, str]:
                  "(missing bars = case timed out; see notes)")
     ax.grid(True, axis="y", which="both", alpha=0.3)
     ax.legend(fontsize=9)
-    return _save(fig, out_dir, "sampling_throughput.png")
+    return _save(plt, fig, out_dir, "sampling_throughput.png")
 
 
 def plot_all(results_path: str, out_dir: str) -> list[tuple[str, str]]:
