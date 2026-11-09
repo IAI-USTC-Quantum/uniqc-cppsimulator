@@ -1,7 +1,7 @@
 """Markdown report generation from a results JSON.
 
-``write_report`` produces the detailed ``doc/benchmark.md``; ``write_readme_summary``
-produces a compact include-file for the README section.
+``write_report`` produces the detailed ``docs/benchmark/report.md``;
+``write_readme_summary`` produces the compact ``docs/benchmark/README_summary.md``.
 """
 
 from __future__ import annotations
@@ -132,7 +132,7 @@ def write_report(data: dict, doc_dir: str) -> str:
         "# Benchmark 详情",
         "",
         "本页由 `python -m benchmark report` 生成；方法论、矩阵定义与扩展方法见",
-        "[benchmark/README.md](../benchmark/README.md)，摘要见[仓库 README](../README.md#性能基准)。",
+        "[benchmark/README.md](../../benchmark/README.md)，摘要见[仓库 README](../../README.md#性能基准)。",
         "",
         "## 运行环境",
         "",
@@ -159,24 +159,24 @@ def write_report(data: dict, doc_dir: str) -> str:
         "",
         "## 图表",
         "",
-        "![ideal runtime](benchmark/ideal_runtime_vs_qubits.png)",
+        "![ideal runtime](ideal_runtime_vs_qubits.png)",
         "",
-        "![thread speedup](benchmark/thread_speedup.png)",
+        "![thread speedup](thread_speedup.png)",
         "",
-        "![noise runtime](benchmark/noise_runtime_vs_qubits.png)",
+        "![noise runtime](noise_runtime_vs_qubits.png)",
         "",
-        "![sampling throughput](benchmark/sampling_throughput.png)",
+        "![sampling throughput](sampling_throughput.png)",
         "",
         "## 结果 JSON",
         "",
         (
             "原始数据（含每次重复的耗时、RSS、p_q0_1）：`benchmark/results.json`（运行时由 "
-            "`--out` 指定，仓库内快照见 `doc/benchmark/results-<date>.json`）。"
+            "`--out` 指定，仓库内快照见 `docs/benchmark/results-<date>.json`）。"
         ),
         "",
         *notes,
     ]
-    path = os.path.join(doc_dir, "benchmark.md")
+    path = os.path.join(doc_dir, "report.md")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(md) + "\n")
     return path
@@ -191,9 +191,11 @@ def write_readme_summary(data: dict, doc_path: str) -> str:
     # cross-simulator table stays at threads=1).
     threads = 1
     lines = [
+        "# 基准结果摘要",
+        "",
         (
             f"运行环境：{meta.get('cpu')}（{meta.get('cores')} 核），Python {meta.get('python')}，"
-            f"threads=1；完整环境与版本表见[详情文档](doc/benchmark.md)。"
+            f"threads=1；完整环境与版本表见[详情文档](report.md)。"
         ),
         "",
         "| 线路 | 最大可比 qubits | 最快 | uniqc_sv | 倍差 |",
@@ -215,7 +217,16 @@ def write_readme_summary(data: dict, doc_path: str) -> str:
         uniqc_s = _fmt_ms(uniqc["stats"]["median_ms"]) if uniqc else "—"
         lines.append(f"| {circuit} | {n} | {_label(best['backend'])} "
                      f"({_fmt_ms(best['stats']['median_ms'])}) | {uniqc_s} | {ratio} |")
-    path = os.path.join(os.path.dirname(doc_path), "benchmark", "README_summary.md")
+    lines += [
+        "",
+        "## 相关文档",
+        "",
+        "- [完整结果与图表](report.md) —— 全部数据表、图与注意事项",
+        "- [基准方法论与扩展指南](../../benchmark/README.md) —— 测量维度、线程模型、如何新增线路/后端",
+        "- [仓库 README · 性能基准](../../README.md#性能基准) —— 面向使用者的结果解读",
+        "- [快速上手](../../README.md#快速上手) —— 安装与第一个模拟器示例",
+    ]
+    path = os.path.join(os.path.dirname(doc_path), "README_summary.md")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")

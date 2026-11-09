@@ -1,8 +1,7 @@
 # Benchmark 详情
 
 本页由 `python -m benchmark report` 生成；方法论、矩阵定义与扩展方法见
-[benchmark/README.md](../benchmark/README.md)，摘要见[仓库 README](../README.md#性能基准)
-和[一页纸摘要](benchmark/README_summary.md)。
+[benchmark/README.md](../../benchmark/README.md)，摘要见[仓库 README](../../README.md#性能基准)。
 
 ## 运行环境
 
@@ -120,17 +119,17 @@
 
 ## 图表
 
-![ideal runtime](benchmark/ideal_runtime_vs_qubits.png)
+![ideal runtime](ideal_runtime_vs_qubits.png)
 
-![thread speedup](benchmark/thread_speedup.png)
+![thread speedup](thread_speedup.png)
 
-![noise runtime](benchmark/noise_runtime_vs_qubits.png)
+![noise runtime](noise_runtime_vs_qubits.png)
 
-![sampling throughput](benchmark/sampling_throughput.png)
+![sampling throughput](sampling_throughput.png)
 
 ## 结果 JSON
 
-原始数据（含每次重复的耗时、RSS、p_q0_1）：`benchmark/results.json`（运行时由 `--out` 指定，仓库内快照见 `doc/benchmark/results-<date>.json`）。
+原始数据（含每次重复的耗时、RSS、p_q0_1）：`benchmark/results.json`（运行时由 `--out` 指定，仓库内快照见 `docs/benchmark/results-<date>.json`）。
 
 ## 注意事项
 

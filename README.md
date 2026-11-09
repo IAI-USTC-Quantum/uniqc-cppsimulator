@@ -80,7 +80,7 @@ uv pip install --python .venv-docs -r docs/requirements.txt .
 .venv-docs/bin/python -m sphinx -b html docs docs/_build/html   # 或 cd docs && make html PYTHON=../.venv-docs/bin/python
 ```
 
-类型存根 `uniqc_cpp.pyi` 随 wheel 发布；基准结果文档见 [doc/benchmark.md](doc/benchmark.md)，一页纸摘要见 [doc/benchmark/README_summary.md](doc/benchmark/README_summary.md)。
+类型存根 `uniqc_cpp.pyi` 随 wheel 发布；基准结果文档见 [docs/benchmark/report.md](docs/benchmark/report.md)，一页纸摘要见 [docs/benchmark/README_summary.md](docs/benchmark/README_summary.md)。
 
 在 UnifiedQuantum 框架中调用本内核（`submit_task` / `Simulator` 等入口）的用法，见
 [UnifiedQuantum 文档的本地模拟章节](https://github.com/IAI-USTC-Quantum/UnifiedQuantum/blob/main/docs/source/1_basic_usage/simulation.md)。
@@ -113,7 +113,7 @@ uv venv .venv-bench --python 3.12 && uv pip install --python .venv-bench/bin/pyt
 
 ### 最近一轮结果（2026-09-22，Xeon Gold 5118 × 48 核，本地 dev 构建 `1.0.2.dev4`）
 
-理想态矢量、单线程、各线路最大可比规模（完整数据见 [`doc/benchmark.md`](doc/benchmark.md)）：
+理想态矢量、单线程、各线路最大可比规模（完整数据见 [`docs/benchmark/report.md`](docs/benchmark/report.md)）：
 
 | 线路 | 最大可比 qubits | 最快 | uniqc_sv | 倍差 |
 |---|---|---|---|---|
@@ -138,7 +138,7 @@ uv venv .venv-bench --python 3.12 && uv pip install --python .venv-bench/bin/pyt
 
 > 数字来自共享开发机（本轮有其他用户进程占用约 21 核，多线程加速比被低估）、
 > 未做绑核等公平性控制，仅用于相对趋势；图表见
-> [doc/benchmark.md](doc/benchmark.md)，原始 JSON 见 `doc/benchmark/results-2026-09-22.json`。
+> [docs/benchmark/report.md](docs/benchmark/report.md)，原始 JSON 见 `docs/benchmark/results-2026-09-22.json`。
 
 ## 版本与兼容
 
