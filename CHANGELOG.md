@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **内核全局多线程**：新增进程级全局开关与线程数 API（`uniqc_cpp.set_parallel_enabled` / `is_parallel_enabled` / `set_num_threads` / `get_num_threads`，默认关闭、单线程，与历史行为完全一致）。态矢量全部门内核（含受控门）与密度算符行循环按 `std::thread` 连续分块并行（无新依赖，CMake 仅链接 `Threads::Threads`）；门操作结果与单线程逐位一致，概率类读出（`pmeasure`/`get_prob`）仅存在浮点求和顺序差异；`rand()` 决策保留在调用线程；态矢量小于 2^14 幅度时自动回落单线程，密度矩阵按行循环总工作量决定。类型存根与 `docs/usage.rst` 同步更新。
+- **内核全局多线程**：新增进程级全局开关与线程数 API（`uniqc_cpp.set_parallel_enabled` / `is_parallel_enabled` / `set_num_threads` / `get_num_threads`，默认关闭、单线程，与历史行为完全一致）。态矢量全部门内核（含受控门）与密度算符行循环按 `std::thread` 连续分块并行（无新依赖，CMake 仅链接 `Threads::Threads`）；门操作结果与单线程数值一致（不同编译器的浮点收缩可能有末位差异），概率类读出（`pmeasure`/`get_prob`）还可能有浮点求和顺序差异；`rand()` 决策保留在调用线程；态矢量小于 2^14 幅度时自动回落单线程，密度矩阵按行循环总工作量决定。类型存根与 `docs/usage.rst` 同步更新。
 - **benchmark 多线程基线接入内核线程**：`uniqc_sv` 后端改为 `option` 模式（threads 档位经全局 API 直接测内核门级并行，此前精确模式的 threads>1 档位被跳过）；新增 `uniqc_sv_batch` 后端保留原进程池 shot 级采样吞吐基线；`uniqc_dm` 同样改为 `option`。sampling 预设组加入 `uniqc_sv_batch`，相关文档（README / benchmark/README / docs）同步。
 
 ### Fixed

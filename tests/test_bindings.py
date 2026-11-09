@@ -362,10 +362,11 @@ def _run_mixed_circuit(name: str, n_qubits: int):
     return sim
 
 
-def test_parallel_gates_match_serial_bitwise() -> None:
-    """Gate kernels have no reductions, so the parallel state must be
-    bit-for-bit identical to the serial one (14 qubits = 2^14 amplitudes
-    crosses the MIN_PARALLEL_WORK threshold, exercising real threads)."""
+def test_parallel_gates_match_serial() -> None:
+    """Gate kernels preserve the state (14 qubits = 2^14 amplitudes crosses
+    MIN_PARALLEL_WORK and exercises real threads). Serial and worker loop
+    bodies can be compiled with different floating-point contraction, so
+    exact bitwise equality is not portable across compilers."""
     n_qubits = 14
     serial = _run_mixed_circuit("StatevectorSimulator", n_qubits)
     state_serial = serial.state
@@ -374,7 +375,7 @@ def test_parallel_gates_match_serial_bitwise() -> None:
     uniqc_cpp.set_parallel_enabled(True)
     parallel = _run_mixed_circuit("StatevectorSimulator", n_qubits)
 
-    assert parallel.state == state_serial
+    assert parallel.state == pytest.approx(state_serial, rel=1e-12, abs=1e-12)
 
 
 def test_parallel_readouts_match_serial_approximately() -> None:

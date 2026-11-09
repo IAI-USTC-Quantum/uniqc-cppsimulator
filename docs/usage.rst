@@ -42,10 +42,11 @@ sdist 源码编译，需要满足下方"源码构建要求"。
    print(uniqc_cpp.get_num_threads(), uniqc_cpp.is_parallel_enabled())
 
 两个设置均为进程级全局状态，作用于所有模拟器实例，可在任意时刻切换。门操作
-（含受控门）结果与单线程**逐位一致**；概率类读出（``pmeasure`` / ``get_prob``）
-可能有浮点归约顺序差异。态矢量循环少于 2^14 个幅度时自动回落单线程；密度矩阵
-按行循环的总工作量决定线程数。线程上限指硬件并发数（含 SMT 硬件线程），不是
-物理核心数。随机决策仍在调用线程执行，不由新启动的工作线程消耗随机数。
+（含受控门）结果与单线程数值一致；不同编译器对串行/工作循环的浮点收缩可能产生
+末位差异，概率类读出（``pmeasure`` / ``get_prob``）还可能有浮点归约顺序差异。
+态矢量循环少于 2^14 个幅度时自动回落单线程；密度矩阵按行循环的总工作量决定线程数。
+线程上限指硬件并发数（含 SMT 硬件线程），不是物理核心数。随机决策仍在调用线程执行，
+不由新启动的工作线程消耗随机数。
 
 想看这个内核在 UnifiedQuantum 框架里如何被调用，见 `UnifiedQuantum 文档的本地模拟章节 <https://github.com/IAI-USTC-Quantum/UnifiedQuantum/blob/main/docs/source/1_basic_usage/simulation.md>`_。
 
